@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#152d2a">
+<title>Abalone – 1 gegen 1</title>
+<style>
+:root{--bg:#102522;--panel:#1c3934;--cream:#f3e8cf;--gold:#d5b77a;--text:#fff8e9;--muted:#c6d4ca;--cell:#d9c7a1;--line:#8d7958}
+*{box-sizing:border-box} body{margin:0;background:radial-gradient(ellipse at 50% 0%,#31554d 0%,#18352f 42%,#0d201d 100%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+main{max-width:720px;margin:auto;padding:16px 12px 28px}.screen{display:none}.screen.active{display:block}.menu-options{display:grid;gap:12px;margin-top:22px}.menu-btn{width:100%;min-height:62px;text-align:left;padding:16px 18px;font-family:Georgia,serif;font-size:1.25rem;border-radius:14px}.menu-btn small{display:block;font: .82rem system-ui,sans-serif;color:var(--muted);margin-top:4px}.menu-back{margin-top:14px}.timerline{font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums;text-align:center;font-size:1.2rem;margin:4px 0}.top{text-align:center}.eyebrow{font-size:.75rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}h1{margin:3px 0 5px;font-family:Georgia,serif;font-size:2.1rem;font-weight:600} .sub{margin:0;color:var(--muted);font-size:.92rem}
+.card{background:#1b3732e8;border:1px solid #527168;border-radius:20px;padding:14px;margin-top:14px;box-shadow:0 14px 34px #0004,inset 0 1px 0 #ffffff12}
+.score{display:flex;gap:10px;justify-content:space-between}.player{flex:1;border-radius:14px;padding:11px;background:linear-gradient(145deg,#31554c,#223f38);border:1px solid #ffffff12;box-shadow:inset 0 1px 0 #ffffff12}.player.active{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold),0 0 14px #d5b77a25}.pname{display:flex;align-items:center;gap:7px;font-weight:700;font-size:.92rem}.dot{width:17px;height:17px;border-radius:50%;display:inline-block;border:1px solid #b9b9b9}.black{background:radial-gradient(circle at 32% 27%,#777,#171717 65%);border-color:#111}.white{background:radial-gradient(circle at 32% 27%,#fff,#ddd 75%);border-color:#aaa}.count{font-size:.8rem;color:var(--muted);margin-top:5px}.status{font-size:.95rem;line-height:1.4;min-height:42px;margin:10px 2px 0}.boardwrap{padding:2px 0 0;overflow:hidden}.board{width:100%;height:auto;display:block;touch-action:manipulation}.hole{fill:var(--cell);stroke:var(--line);stroke-width:1.5}.hole.selected{stroke:#f7d36f;stroke-width:4;filter:drop-shadow(0 0 3px #f7d36f)}.hole.group{stroke:#fff0a6;stroke-width:3}.marble{stroke:#493d2d;stroke-width:1.5}.marble.w{stroke:#a99b84;stroke-width:1.25}.marble.b{fill:url(#blackGrad)}.marble.w{fill:url(#whiteGrad)}.legal{fill:#a8d7a8;stroke:#416b4c;stroke-width:2}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.btn{border:1px solid #6d8a80;background:linear-gradient(145deg,#31554c,#24443c);color:var(--text);border-radius:11px;padding:11px 13px;font-size:.9rem;font-weight:650;cursor:pointer;flex:1;min-width:100px}.btn.primary{background:linear-gradient(145deg,#f0d79b,#c9a968);border-color:#f0d79b;color:#1c2c26;box-shadow:0 3px 0 #927746}.btn:active{transform:scale(.98)}.hint{color:var(--muted);font-size:.82rem;line-height:1.45;margin:9px 2px 0}.rules summary{cursor:pointer;font-weight:700}.rules p,.rules li{font-size:.88rem;line-height:1.5;color:var(--muted)}.rules ul{padding-left:20px}.notice{color:#f5d78e;font-size:.8rem;margin-top:6px}
+#fullscreenBtn{flex-basis:100%}.player-clock{display:none;margin-top:9px;padding-top:7px;border-top:1px solid #ffffff24;font-size:1.2rem;font-weight:850;font-variant-numeric:tabular-nums;letter-spacing:.025em;color:var(--gold)}.player-clock.visible{display:block}.player-clock.running{color:#ffe19a;text-shadow:0 0 10px #f4cf7770}.player-clock .clock-arrow{font-size:.85em;margin-right:4px}
+#fxOverlay{position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden;display:none;background:#07110c22}
+#fxOverlay.show{display:block}
+.fx-caption{position:absolute;top:12%;left:50%;transform:translateX(-50%);padding:8px 13px;border-radius:12px;background:#101b17e8;color:#fff3c7;font-weight:800;letter-spacing:.08em;border:2px solid #d5b77a;white-space:nowrap;text-shadow:2px 2px #000}
+.fx-ufo{position:absolute;left:-25%;top:24%;font-size:clamp(42px,10vw,76px);filter:drop-shadow(0 0 12px #8af7ff);animation:ufoFly 2.35s ease-in-out forwards}
+.fx-beam{position:absolute;left:5%;top:34%;width:70px;height:0;border-left:35px solid transparent;border-right:35px solid transparent;border-top:0 solid #9df7ff99;animation:beamDrop .7s .35s ease-out forwards;filter:drop-shadow(0 0 10px #9df7ff)}
+.fx-sniper{position:absolute;left:-20%;top:63%;font-size:clamp(38px,9vw,68px);animation:sniperFly 2.15s ease-out forwards}
+.fx-shot{position:absolute;left:18%;top:72%;font-size:32px;animation:shotFly 1.6s .2s ease-in forwards}
+.fx-ball{position:absolute;right:-15%;top:66%;font-size:clamp(24px,6vw,44px);animation:ballFly 2s ease-in-out forwards}
+.fx-blackhole{position:absolute;left:38%;top:36%;font-size:clamp(50px,12vw,90px);animation:blackHole 2.2s ease-in forwards;filter:drop-shadow(0 0 16px #a48cff)}
+.fx-tractor{position:absolute;left:42%;top:48%;font-size:clamp(32px,8vw,58px);animation:tractor 2s ease-in forwards}
+#fxOverlay.bomb-show{display:block;background:radial-gradient(ellipse at center,#ffb52a66 0%,#7b1600aa 42%,#090b10ee 100%);pointer-events:none;animation:blastFlash 1.9s ease-out forwards}
+.blast-core{position:absolute;left:50%;top:50%;width:34vmin;height:34vmin;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#fffde0 0%,#ffe36b 18%,#ff7b16 42%,#c51d08 65%,transparent 72%);filter:blur(2px);animation:blastCore 1.65s cubic-bezier(.12,.72,.22,1) forwards}
+.flame{position:absolute;left:var(--x);top:var(--y);width:var(--w);height:var(--h);border-radius:55% 45% 60% 40%;transform:translate(-50%,-50%) rotate(var(--rot));transform-origin:center bottom;background:linear-gradient(to top,#8d1000 0%,#f33b08 28%,#ff9d16 58%,#ffe88a 78%,#fff8dc 90%,transparent 100%);filter:blur(var(--blur));opacity:0;animation:flameBurst var(--dur) cubic-bezier(.15,.7,.2,1) var(--delay) forwards}
+@keyframes blastFlash{0%{opacity:0}8%{opacity:1}24%{opacity:1}100%{opacity:0}}
+@keyframes blastCore{0%{opacity:0;scale:.05}12%{opacity:1;scale:1.3}55%{opacity:.9;scale:5.5}100%{opacity:0;scale:9}}
+@keyframes flameBurst{0%{opacity:0;scale:.12;translate:0 35vh}18%{opacity:1}60%{opacity:.95;scale:1.25;translate:var(--dx) var(--dy)}100%{opacity:0;scale:.25;translate:var(--dx) calc(var(--dy) - 25vh)}}
+#fxOverlay.win-show{display:block;background:#07110ce0;pointer-events:none}
+.win-title{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.35);font-family:Georgia,serif;font-size:clamp(76px,22vw,150px);font-weight:900;letter-spacing:.12em;color:#ffe28a;text-shadow:0 3px 0 #9b6b20,0 7px 0 #684516,0 0 18px #ffdf70,0 0 45px #ffb900;white-space:nowrap;animation:winPop .75s cubic-bezier(.17,.89,.32,1.45) forwards}
+.win-subtitle{position:absolute;left:50%;top:50%;transform:translateX(-50%);font-size:clamp(18px,5vw,28px);font-weight:800;color:#fff4cf;text-shadow:0 2px 8px #000;text-align:center;white-space:nowrap}
+.confetti{position:absolute;top:-12vh;width:10px;height:17px;opacity:.95;animation:confettiFall var(--fall-time) linear var(--delay) forwards;transform:rotate(var(--spin));border-radius:2px}
+@keyframes winPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.25) rotate(-12deg)}70%{opacity:1;transform:translate(-50%,-50%) scale(1.12) rotate(3deg)}100%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0)}}
+@keyframes confettiFall{0%{top:-12vh;transform:translateX(0) rotate(0);opacity:1}100%{top:110vh;transform:translateX(var(--drift)) rotate(900deg);opacity:.85}}
+@keyframes blackHole{0%{transform:scale(.1) rotate(0);opacity:0}30%{transform:scale(1.1) rotate(90deg);opacity:1}100%{transform:scale(.15) rotate(720deg);opacity:0}}
+@keyframes tractor{0%{left:-15%;top:45%;opacity:0}25%{opacity:1}70%{left:45%;top:45%;transform:scale(1.2)}100%{left:120%;top:38%;opacity:0}}
+@keyframes ufoFly{0%{left:-25%;transform:rotate(-8deg)}35%{left:35%;transform:rotate(4deg)}65%{left:52%;transform:translateY(4vh) rotate(-4deg)}100%{left:120%;transform:translateY(-8vh) rotate(12deg)}}
+@keyframes beamDrop{0%{border-top-width:0;height:0;opacity:0}35%{border-top-width:0;height:0;opacity:1}100%{border-top-width:115px;height:90px;opacity:0}}
+@keyframes sniperFly{0%{left:-20%;transform:rotate(0)}28%{left:18%;transform:rotate(0)}55%{left:24%;transform:rotate(-3deg)}100%{left:115%;transform:rotate(12deg)}}
+@keyframes shotFly{0%{left:18%;opacity:0}10%{opacity:1}100%{left:115%;opacity:0;transform:translateY(-12px)}}
+@keyframes ballFly{0%{right:-15%;transform:rotate(0) scale(1)}45%{right:42%;transform:rotate(220deg) scale(1.1)}100%{right:115%;transform:rotate(720deg) scale(.6);opacity:0}}
+@media(min-width:600px){main{padding-top:24px}.boardwrap{max-width:590px;margin:auto}.card{padding:16px}}
+</style>
+</head>
+<body><main>
+<section id="mainMenu" class="screen active">
+ <header class="top"><h1>Abalone</h1></header>
+ <div class="menu-options">
+  <button class="btn menu-btn" id="standardMode">Standard<small>Klassisches Spielfeld</small></button>
+  <button class="btn menu-btn" id="smallMode">Mini<small>Kleineres Spielfeld · 7 Kugeln je Seite</small></button>
+  <button class="btn menu-btn" id="timedMode">Zeitspiel<small>Standardspiel mit Zeitlimit</small></button>
+ </div>
+</section>
+<section id="timeMenu" class="screen">
+ <header class="top"><h1>Abalone</h1><p class="sub">Zeitspiel · Spielzeit wählen</p></header>
+ <div class="menu-options">
+  <button class="btn menu-btn time-choice" data-minutes="3">3 Minuten</button>
+  <button class="btn menu-btn time-choice" data-minutes="5">5 Minuten</button>
+  <button class="btn menu-btn time-choice" data-minutes="10">10 Minuten</button>
+ </div>
+ <button class="btn menu-back" id="timeBack">Zurück</button>
+</section>
+<section id="gameScreen" class="screen">
+<header class="top"><h1>Abalone</h1></header>
+<section class="card">
+ <div class="score">
+  <div class="player active" id="pBlack"><div class="pname"><span class="dot black"></span> Schwarz</div><div class="count" id="blackCount">14 Kugeln · 0 Verlustpunkte</div><div class="player-clock" id="blackClock"></div></div>
+  <div class="player" id="pWhite"><div class="pname"><span class="dot white"></span> Weiß</div><div class="count" id="whiteCount">14 Kugeln · 0 Verlustpunkte</div><div class="player-clock" id="whiteClock"></div></div>
+ </div>
+ <div class="status" id="status" aria-live="polite">Schwarz ist am Zug. Wähle eine Kugel oder eine zusammenhängende Gruppe.</div>
+ <div class="boardwrap"><svg id="board" class="board" viewBox="86 76 188 168" role="img" aria-label="Abalone-Spielbrett"></svg></div>
+ <div class="controls"><button class="btn" id="clear">Auswahl aufheben</button><button class="btn primary" id="newGame">Neues Spiel</button><button class="btn" id="backMenu">Menü</button></div>
+ <div class="hint" id="hint">Ziehen: Wähle 1–3 benachbarte eigene Kugeln in einer Linie und tippe dann auf ein benachbartes Zielfeld. Zum Schieben muss die eigene Gruppe zahlenmäßig überlegen sein.</div>
+ <div class="notice">Lokales Spiel: Beide Personen spielen abwechselnd auf diesem Handy. Im Vollbild: zwei Finger auseinanderziehen zum Zoomen, drehen zum Rotieren.</div>
+</section>
+<section class="card rules"><details><summary>Regeln kurz erklärt</summary><ul>
+<li>Jeder startet mit 14 Kugeln. Wer zuerst 6 Verlustpunkte verursacht, gewinnt. Eine Bombe zählt beim Herausschieben 2 Punkte.</li><li>Jede Seite hat eine zufällig markierte Bombe (rotes X). Wird sie herausgeschoben, explodiert sie und entfernt Kugeln auf den benachbarten Feldern; jede zusätzlich zerstörte Kugel zählt 1 Verlustpunkt.</li>
+<li>Eine Kugel oder eine zusammenhängende Gruppe aus 2 oder 3 Kugeln darf um ein Feld bewegt werden.</li>
+<li><b>Inline:</b> Die Gruppe bewegt sich entlang ihrer Linie. Gegnerische Kugeln dürfen geschoben werden, wenn die eigene Gruppe größer ist als die gegnerische Reihe und dahinter ein freies Feld oder der Brettrand liegt.</li>
+<li><b>Seitwärts:</b> 2 oder 3 eigene Kugeln können gemeinsam seitwärts auf freie Felder gleiten; alle Zielfelder müssen frei sein.</li>
+<li>Eine Gruppe darf nicht durch eigene oder gegnerische Kugeln blockiert werden. Einzelne Kugeln können nicht seitwärts als Gruppe bewegt werden.</li>
+</ul><p>Die App prüft die üblichen Standardzüge und zählt herausgeschobene Kugeln. Im Zeitspiel hat jede Seite eine eigene Uhr. Die Uhr der jeweils aktiven Seite läuft; wer zuerst abläuft, verliert.</p></details></section>
+</main>
+<div id="fxOverlay" aria-hidden="true"></div>
+<script>
+(() => {
+const svg=document.getElementById('board'), status=document.getElementById('status'), hint=document.getElementById('hint');
+let boardRadius=4,timed=false,timeLeft={b:0,w:0},timerHandle=null,timerStarted=false,timeLimitSeconds=0;
+const cells=[], map=new Map(); let pieces=new Map(), turn='b', selected=[], lost={b:0,w:0}, gameOver=false, bombs={b:null,w:null};
+const dirs=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+const key=(q,r)=>q+','+r;
+function buildBoard(radius){boardRadius=radius;cells.length=0;map.clear();for(let r=-radius;r<=radius;r++)for(let q=Math.max(-radius,-r-radius);q<=Math.min(radius,-r+radius);q++){let c={q,r};cells.push(c);map.set(key(q,r),c)}}
+buildBoard(4);
+function init(radius=4,isTimed=false,minutes=0){
+ if(timerHandle){clearInterval(timerHandle);timerHandle=null;}
+ buildBoard(radius);timed=isTimed;timeLeft={b:minutes*60,w:minutes*60};timeLimitSeconds=minutes*60;timerStarted=false;
+ pieces=new Map();lost={b:0,w:0};turn='b';selected=[];gameOver=false;
+ if(radius===4){
+  for(let q=0;q<=4;q++)pieces.set(key(q,-4),'b');
+  for(let q=-1;q<=4;q++)pieces.set(key(q,-3),'b');
+  for(let q=0;q<=2;q++)pieces.set(key(q,-2),'b');
+  for(let q=-4;q<=0;q++)pieces.set(key(q,4),'w');
+  for(let q=-4;q<=1;q++)pieces.set(key(q,3),'w');
+  for(let q=-2;q<=0;q++)pieces.set(key(q,2),'w');
+ }else{
+  for(let q=0;q<=3;q++)pieces.set(key(q,-3),'b');
+  for(let q=0;q<=2;q++)pieces.set(key(q,-2),'b');
+  for(let q=-3;q<=0;q++)pieces.set(key(q,3),'w');
+  for(let q=-2;q<=0;q++)pieces.set(key(q,2),'w');
+ }
+ const bk=[...pieces.keys()].filter(k=>pieces.get(k)==='b'),wk=[...pieces.keys()].filter(k=>pieces.get(k)==='w');
+ bombs.b=bk[Math.floor(Math.random()*bk.length)];bombs.w=wk[Math.floor(Math.random()*wk.length)];
+ if(timed)updateTimer();
+ draw();updateUI();
+}
+function startTimer(){
+ if(!timed||timerStarted||gameOver)return;
+ timerStarted=true;
+ updateTimer();
+ timerHandle=setInterval(()=>{
+  if(gameOver){clearInterval(timerHandle);timerHandle=null;return;}
+  const active=turn;
+  timeLeft[active]=Math.max(0,timeLeft[active]-1);
+  updateTimer();
+  if(timeLeft[active]<=0){
+   gameOver=true;clearInterval(timerHandle);timerHandle=null;
+   const winner=active==='b'?'w':'b';
+   status.textContent=(active==='b'?'Schwarz':'Weiß')+' hat keine Zeit mehr. '+(winner==='b'?'Schwarz':'Weiß')+' gewinnt!';
+   updateUI();showWinAnimation(winner);
+  }
+ },1000);
+}
+function updateTimer(){
+ const fmt=v=>Math.floor(v/60)+':'+String(v%60).padStart(2,'0');
+ const active=turn;
+ const black=document.getElementById('blackClock'),white=document.getElementById('whiteClock');
+ black.textContent=fmt(timeLeft.b);white.textContent=fmt(timeLeft.w);
+ black.classList.toggle('visible',timed);white.classList.toggle('visible',timed);
+ black.classList.toggle('running',timed&&active==='b'&&timerStarted);
+ white.classList.toggle('running',timed&&active==='w'&&timerStarted);
+ const arrowB=document.createElement('span');arrowB.className='clock-arrow';arrowB.textContent=active==='b'?'▶':'';
+ const arrowW=document.createElement('span');arrowW.className='clock-arrow';arrowW.textContent=active==='w'?'▶':'';
+ black.prepend(arrowB);white.prepend(arrowW);
+}
+function xy(q,r){const z=4/boardRadius;return {x:180+(q*20+r*10)*z,y:160+r*17.32*z}}
+function el(tag,attrs={}){let n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);return n}
+function groupAxis(){if(selected.length<2)return null;let a=selected.map(k=>k.split(',').map(Number));for(const [dq,dr] of dirs){if(a.every(([q,r])=>a.some(([x,y])=>x===q+dq&&y===r+dr)||a.some(([x,y])=>x===q-dq&&y===r-dr))){let sorted=a.slice().sort((u,v)=>(u[0]*dq+u[1]*dr)-(v[0]*dq+v[1]*dr));let ok=true;for(let i=1;i<sorted.length;i++)if(sorted[i][0]-sorted[i-1][0]!==dq||sorted[i][1]-sorted[i-1][1]!==dr)ok=false;if(ok)return [dq,dr]}}return null}
+function isLine(keys){if(keys.length<=1)return true;let arr=keys.map(k=>k.split(',').map(Number));for(const [dq,dr] of dirs){const s=arr.slice().sort((a,b)=>(a[0]*dq+a[1]*dr)-(b[0]*dq+b[1]*dr));if(s.every((p,i)=>i===0||(p[0]-s[i-1][0]===dq&&p[1]-s[i-1][1]===dr)))return true}return false}
+function selectedSet(){return new Set(selected)}
+function legalMove(keys,dq,dr){
+ if(!keys.length||keys.length>3||keys.some(k=>pieces.get(k)!==turn)||!isLine(keys))return null;
+ const arr=keys.map(k=>k.split(',').map(Number));let axis=null;
+ if(keys.length>1){for(const [aq,ar] of dirs){let s=arr.slice().sort((a,b)=>(a[0]*aq+a[1]*ar)-(b[0]*aq+b[1]*ar));if(s.every((p,i)=>i===0||(p[0]-s[i-1][0]===aq&&p[1]-s[i-1][1]===ar))){axis=[aq,ar];break}}}
+ const inline=keys.length===1||(axis&&(Math.abs(dq)===Math.abs(axis[0])&&Math.abs(dr)===Math.abs(axis[1])||dq===axis[0]&&dr===axis[1]||dq===-axis[0]&&dr===-axis[1]));
+ if(!inline){
+   if(keys.length<2)return null;
+   let dest=arr.map(([q,r])=>key(q+dq,r+dr));
+   if(dest.some(k=>!map.has(k)||pieces.has(k)))return null;
+   return {keys,dest,push:[]};
+ }
+ let front=arr.slice().sort((a,b)=>(b[0]*dq+b[1]*dr)-(a[0]*dq+a[1]*dr))[0];
+ let ownFront=key(front[0],front[1]), next=key(front[0]+dq,front[1]+dr);
+ // ensure the move direction is along the selected group's axis
+ if(keys.length>1&&axis&&!((dq===axis[0]&&dr===axis[1])||(dq===-axis[0]&&dr===-axis[1])))return null;
+ if(!map.has(next))return null;
+ if(!pieces.has(next))return {keys,dest:arr.map(([q,r])=>key(q+dq,r+dr)),push:[]};
+ // Push opponents only if moving toward the front of group and group is stronger.
+ let opponents=[],q=front[0]+dq,r=front[1]+dr;
+ while(map.has(key(q,r))&&pieces.has(key(q,r))&&pieces.get(key(q,r))!==turn){opponents.push(key(q,r));q+=dq;r+=dr}
+ if(opponents.length===0||opponents.length>=keys.length||opponents.length>2)return null;
+ if(map.has(key(q,r))&&pieces.has(key(q,r)))return null;
+ return {keys,dest:arr.map(([x,y])=>key(x+dq,y+dr)),push:opponents, pushEnd:map.has(key(q,r))?key(q,r):null, dq,dr};
+}
+function draw(){
+ svg.innerHTML='';
+ let defs=el('defs');
+ let gb=el('radialGradient',{id:'blackGrad',cx:'30%',cy:'23%',r:'78%'});gb.append(el('stop',{offset:'0%','stop-color':'#858585'}),el('stop',{offset:'13%','stop-color':'#555'}),el('stop',{offset:'43%','stop-color':'#202020'}),el('stop',{offset:'78%','stop-color':'#080808'}),el('stop',{offset:'100%','stop-color':'#000'}));
+ let gw=el('radialGradient',{id:'whiteGrad',cx:'29%',cy:'21%',r:'80%'});gw.append(el('stop',{offset:'0%','stop-color':'#ffffff'}),el('stop',{offset:'17%','stop-color':'#fffefa'}),el('stop',{offset:'43%','stop-color':'#f5f3ed'}),el('stop',{offset:'72%','stop-color':'#dedbd2'}),el('stop',{offset:'91%','stop-color':'#b9b8b2'}),el('stop',{offset:'100%','stop-color':'#858783'}));
+ let shine=el('radialGradient',{id:'marbleShine',cx:'35%',cy:'20%',r:'75%'});shine.append(el('stop',{offset:'0%','stop-color':'#fff','stop-opacity':'.8'}),el('stop',{offset:'35%','stop-color':'#fff','stop-opacity':'.22'}),el('stop',{offset:'100%','stop-color':'#fff','stop-opacity':'0'}));
+ defs.append(gb,gw,shine);svg.append(defs);
+ let selectedKeys=selectedSet();
+ for(const c of cells){let {x,y}=xy(c.q,c.r),k=key(c.q,c.r);let circle=el('circle',{cx:x,cy:y,r:9.1,class:'hole'+(selectedKeys.has(k)?' selected':'')});circle.addEventListener('click',()=>tap(k));svg.append(circle);
+  if(pieces.has(k)){
+    let color=pieces.get(k);
+    let shade=el('ellipse',{cx:x+.35,cy:y+1.25,rx:7.65,ry:7.1,fill:'#000','fill-opacity':'.28','pointer-events':'none'});svg.append(shade);
+    let m=el('circle',{cx:x,cy:y,r:7.8,class:'marble '+(color==='b'?'b':'w')});m.style.pointerEvents='none';svg.append(m);
+    let gloss=el('ellipse',{cx:x-2.0,cy:y-2.5,rx:4.5,ry:3.25,fill:'url(#marbleShine)','pointer-events':'none'});svg.append(gloss);
+    let glint=el('ellipse',{cx:x-2.8,cy:y-3.1,rx:1.35,ry:.85,fill:'#fff','fill-opacity':color==='b'?'.72':'.52','pointer-events':'none'});svg.append(glint);
+    if(bombs[color]===k){
+      let cross=el('g',{stroke:'#f21f2f','stroke-width':'2.8','stroke-linecap':'round','pointer-events':'none'});
+      cross.append(el('line',{x1:x-3.5,y1:y-3.5,x2:x+3.5,y2:y+3.5}),el('line',{x1:x+3.5,y1:y-3.5,x2:x-3.5,y2:y+3.5}));
+      svg.append(cross);
+    }
+  }
+ }
+}
+function lineForMove(baseKeys,dq,dr){
+ // Es werden ausschließlich die ausdrücklich ausgewählten Kugeln bewegt.
+ // Bei einer Reihe müssen daher alle Kugeln der Gruppe einzeln markiert sein.
+ return baseKeys.slice();
+}
+function tap(k){
+ if(gameOver)return;
+ // A player can tap the opposing marble being pushed, or the empty field
+ // beyond it. Try all six directions, inferring a whole own line if needed.
+ if(selected.length){
+   for(const [dq,dr] of dirs){
+     const autoKeys=lineForMove(selected,dq,dr);
+     const mv=legalMove(autoKeys,dq,dr);
+     if(mv&&(mv.dest.includes(k)||mv.push.includes(k))){
+       applyMove(mv);return;
+     }
+   }
+ }
+ if(!pieces.has(k))return;
+ if(pieces.get(k)!==turn){
+   status.textContent='Wähle alle eigenen Kugeln der Gruppe aus und tippe anschließend auf das Zielfeld.';
+   return;
+ }
+ if(selected.includes(k)){selected=selected.filter(x=>x!==k)}else{
+   if(selected.length===0)selected=[k];
+   else if(selected.length<3&&isLine([...selected,k])&&selected.some(s=>{
+     let [q,r]=s.split(',').map(Number),[x,y]=k.split(',').map(Number);
+     return dirs.some(([dq,dr])=>q+dq===x&&r+dr===y)
+   })){selected.push(k)}
+   else selected=[k];
+ }
+ draw();updateUI();
+}
+function showKnockoutAnimation(kind){
+ const overlay=document.getElementById('fxOverlay');
+ overlay.innerHTML='';
+ const caption=document.createElement('div');caption.className='fx-caption';
+ const ufo=document.createElement('div');ufo.className='fx-ufo';ufo.textContent='🛸';
+ const beam=document.createElement('div');beam.className='fx-beam';
+ const sniper=document.createElement('div');sniper.className='fx-sniper';sniper.textContent='🎯';
+ const shot=document.createElement('div');shot.className='fx-shot';shot.textContent='💥';
+ const ball=document.createElement('div');ball.className='fx-ball';ball.textContent='⚫';
+ const hole=document.createElement('div');hole.className='fx-blackhole';hole.textContent='🌀';
+ const tractor=document.createElement('div');tractor.className='fx-tractor';tractor.textContent='🛰️';
+ if(kind==='bomb'){
+   caption.textContent='💣 BOOM! EXTRA SCHADEN';
+   overlay.append(caption,hole,shot,ball);
+ } else {
+   const variant=Math.floor(Math.random()*4);
+   if(variant===0){caption.textContent='🛸 UFO-KUGEL-ENTFÜHRUNG';overlay.append(caption,ufo,beam,ball)}
+   else if(variant===1){caption.textContent='🎯 RETRO-KUGEL-SCHUSS';overlay.append(caption,sniper,shot,ball)}
+   else if(variant===2){caption.textContent='🌀 KUGEL IM WURMLOCH';overlay.append(caption,hole,ball)}
+   else {caption.textContent='🛰️ TRAKTORSTRAHL AKTIV';overlay.append(caption,tractor,ball)}
+ }
+ overlay.classList.add('show');
+ setTimeout(()=>{overlay.classList.remove('show');overlay.innerHTML=''},2700);
+}
+function showBombExplosion(){
+ const overlay=document.getElementById('fxOverlay');
+ overlay.innerHTML='';overlay.className='bomb-show';
+ const core=document.createElement('div');core.className='blast-core';overlay.append(core);
+ for(let i=0;i<34;i++){
+  const f=document.createElement('i');f.className='flame';
+  const angle=(Math.PI*2*i/34)+(Math.random()-.5)*.3;
+  const distance=18+Math.random()*48;
+  f.style.setProperty('--x',(50+Math.cos(angle)*distance)+'%');
+  f.style.setProperty('--y',(50+Math.sin(angle)*distance)+'%');
+  f.style.setProperty('--w',(8+Math.random()*18)+'vw');
+  f.style.setProperty('--h',(32+Math.random()*58)+'vh');
+  f.style.setProperty('--rot',(Math.random()*70-35)+'deg');
+  f.style.setProperty('--blur',(Math.random()*3)+'px');
+  f.style.setProperty('--delay',(Math.random()*.16)+'s');
+  f.style.setProperty('--dur',(1.1+Math.random()*.65)+'s');
+  f.style.setProperty('--dx',((Math.random()-.5)*45)+'vw');
+  f.style.setProperty('--dy',((Math.random()-.5)*55)+'vh');
+  overlay.append(f);
+ }
+ setTimeout(()=>{if(overlay.className==='bomb-show'){overlay.className='';overlay.innerHTML=''}},2300);
+}
+function showWinAnimation(winner){
+ const overlay=document.getElementById('fxOverlay');
+ overlay.innerHTML='';overlay.className='win-show';
+ const title=document.createElement('div');title.className='win-title';title.textContent='WIN!';
+ const subtitle=document.createElement('div');subtitle.className='win-subtitle';
+ subtitle.textContent=(winner==='b'?'Schwarz':'Weiß')+' gewinnt!';
+ overlay.append(title,subtitle);
+ for(let i=0;i<90;i++){
+  const piece=document.createElement('i');piece.className='confetti';
+  piece.style.left=(Math.random()*100)+'%';
+  piece.style.background=['#f5d36f','#fff1c2','#e7a93b','#d8e7db','#c98b42','#ffffff'][i%6];
+  piece.style.setProperty('--delay',(Math.random()*1.5)+'s');
+  piece.style.setProperty('--fall-time',(2.8+Math.random()*2.4)+'s');
+  piece.style.setProperty('--drift',((Math.random()-.5)*180)+'px');
+  piece.style.setProperty('--spin',(Math.random()*360)+'deg');
+  overlay.append(piece);
+ }
+ setTimeout(()=>{overlay.className='';overlay.innerHTML=''},7000);
+}
+function checkWinner(){
+ const winningThreshold=boardRadius===3?3:6;
+ if(lost.b>=winningThreshold)return 'w';
+ if(lost.w>=winningThreshold)return 'b';
+ return null;
+}
+function applyMove(mv){
+ startTimer();
+ const oldPieces=new Map(pieces);
+ const oldBombs={...bombs};
+ let knockedOff=[], bombKnocked=null;
+ // Move the bomb marker together with its exact marble identity.
+ // Update the marker before mutating the board, based on the source->destination mapping.
+ for(let i=0;i<mv.keys.length;i++){
+   if(bombs[turn]===mv.keys[i]) bombs[turn]=mv.dest[i];
+ }
+ // Remove own marbles, then shift any pushed opponents from front to back.
+ for(const k of mv.keys)pieces.delete(k);
+ if(mv.push.length){
+   for(const op of mv.push.slice().reverse()){
+     let [q,r]=op.split(',').map(Number),dest=key(q+mv.dq,r+mv.dr);
+     const victim=oldPieces.get(op);
+     const isBomb=oldBombs[victim]===op;
+     pieces.delete(op);
+     if(isBomb){
+       if(map.has(dest)) bombs[victim]=dest;
+       else bombs[victim]=null;
+     }
+     if(map.has(dest)){
+       pieces.set(dest,victim);
+     } else {
+       knockedOff.push({key:op,color:victim,isBomb});
+       if(isBomb)bombKnocked={key:op,color:victim};
+     }
+   }
+ }
+ for(let i=0;i<mv.keys.length;i++)pieces.set(mv.dest[i],turn);
+
+ // Every ejected marble is one point; a bomb is worth two points to the opponent.
+ for(const victim of knockedOff){
+   lost[victim.color]+=victim.isBomb?2:1;
+   if(victim.isBomb)bombs[victim.color]=null;
+ }
+ const explosion=!!bombKnocked;
+ // Bombs still count as two points when ejected; adjacent marbles are unaffected.
+ selected=[];
+ const winner=checkWinner();
+ if(winner){gameOver=true;if(timerHandle){clearInterval(timerHandle);timerHandle=null;}status.textContent=(winner==='b'?'Schwarz':'Weiß')+' gewinnt!';}
+ else {turn=turn==='b'?'w':'b';status.textContent=(turn==='b'?'Schwarz':'Weiß')+' ist am Zug.';}
+ draw();updateUI();
+ if(winner)showWinAnimation(winner);
+  else if(bombKnocked)showBombExplosion();
+  else if(knockedOff.length)showKnockoutAnimation('normal');
+}
+function updateUI(){
+ document.getElementById('pBlack').classList.toggle('active',turn==='b'&&!gameOver);
+ document.getElementById('pWhite').classList.toggle('active',turn==='w'&&!gameOver);
+ document.getElementById('blackCount').textContent=[...pieces.values()].filter(c=>c==='b').length+' Kugeln · '+lost.b+' Verlustpunkte';
+ document.getElementById('whiteCount').textContent=[...pieces.values()].filter(c=>c==='w').length+' Kugeln · '+lost.w+' Verlustpunkte';
+ if(!gameOver&&selected.length){status.textContent=(turn==='b'?'Schwarz':'Weiß')+': '+selected.length+' Kugel(n) ausgewählt. Tippe auf ein angrenzendes Zielfeld.'}
+ if(hint)hint.textContent=selected.length?'Du kannst nur die hinterste Kugel auswählen: tippe dann auf das Zielfeld in Bewegungsrichtung. Zusammenhängende eigene Kugeln werden automatisch mitgezogen.':'Wähle eine eigene Kugel und tippe auf das Zielfeld. Für einen Schiebezug erkennt das Spiel zusammenhängende eigene Kugeln automatisch.';
+}
+document.getElementById('clear').addEventListener('click',()=>{selected=[];draw();updateUI();status.textContent=(turn==='b'?'Schwarz':'Weiß')+' ist am Zug. Auswahl aufgehoben.'});
+document.getElementById('newGame').addEventListener('click',()=>{if(confirm('Neues Spiel starten? Der aktuelle Spielstand geht verloren.'))init(boardRadius,timed,timeLimitSeconds/60)});
+// Hauptmenü und Spielmodi
+const mainMenu=document.getElementById('mainMenu');
+const timeMenu=document.getElementById('timeMenu');
+const gameScreen=document.getElementById('gameScreen');
+function showScreen(screen){
+ [mainMenu,timeMenu,gameScreen].forEach(el=>el.classList.remove('active'));
+ screen.classList.add('active');
+ document.body.classList.remove('fullscreen-mode');
+}
+function startGame(radius,isTimed,minutes){
+ showScreen(gameScreen);
+ init(radius,isTimed,minutes);
+}
+document.getElementById('standardMode').addEventListener('click',()=>startGame(4,false,0));
+document.getElementById('smallMode').addEventListener('click',()=>startGame(3,false,0));
+document.getElementById('timedMode').addEventListener('click',()=>showScreen(timeMenu));
+document.getElementById('timeBack').addEventListener('click',()=>showScreen(mainMenu));
+document.querySelectorAll('.time-choice').forEach(button=>{
+ button.addEventListener('click',()=>startGame(4,true,Number(button.dataset.minutes)));
+});
+document.getElementById('backMenu').addEventListener('click',()=>{
+ if(timerHandle){clearInterval(timerHandle);timerHandle=null;}
+ showScreen(mainMenu);
+});
+// Kein Spiel wird vor der Auswahl automatisch gestartet.
+})();
+</script></body></html>

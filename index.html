@@ -622,7 +622,25 @@ async function authRequest(path,body){
  if(!response.ok)throw new Error(data?.msg||data?.message||data?.error_description||data?.error||'Authentifizierung fehlgeschlagen');
  return data;
 }
+let authRefreshPromise=null;
+async function ensureFreshAuthSession(){
+ if(!authSession?.access_token||!authSession?.refresh_token)return;
+ if(authSession.expires_at&&authSession.expires_at>Date.now()/1000+90)return;
+ if(!authRefreshPromise){
+  authRefreshPromise=(async()=>{
+   try{
+    const refreshed=await authRequest('token?grant_type=refresh_token',{refresh_token:authSession.refresh_token});
+    saveAuthSession(refreshed);
+   }catch(e){
+    saveAuthSession(null);
+    throw new Error('Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.');
+   }finally{authRefreshPromise=null;}
+  })();
+ }
+ await authRefreshPromise;
+}
 async function rpc(name,args){
+ await ensureFreshAuthSession();
  const response=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+name,{
   method:'POST',
   headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+(authSession?.access_token||SUPABASE_KEY),'Content-Type':'application/json'},
@@ -700,6 +718,7 @@ async function copyText(value,label='Text'){
 }
 async function sendOnlineMove(mv){
  if(!multiplayer||!onlineRoomCode||!onlineToken)return;
+ await ensureFreshAuthSession();
  if(!authSession?.access_token){
   status.textContent='Für Online-Partien wird ein angemeldeter Account benötigt.';
   return;

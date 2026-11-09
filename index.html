@@ -454,7 +454,6 @@ function showScreen(screen){
 
 let currentPlayer=null, isGuest=true, pendingInvite=null;
 let onlineOpponent=null;
-const DEVICE_KEY='abalone_device_token_v1';
 function renderProfile(){
  const pill=document.getElementById('profilePill');
  if(!currentPlayer){pill.style.display='none';return;}
@@ -733,22 +732,7 @@ async function sendOnlineMove(mv){
   try{const latest=await rpc('abalone_get_room',{p_room_code:onlineRoomCode,p_player_token:onlineToken});if(latest.state)restoreState(latest.state);}catch{}
  }finally{onlineBusy=false;}
 }
-async function sendOnlineState(winner){
- // Legacy browser-trusted state submission is intentionally disabled.
- return;
- onlineBusy=true;
- try{
-  await rpc('abalone_submit_state',{
-   p_room_code:onlineRoomCode,p_player_token:onlineToken,p_state:serializeState(),
-   p_next_turn:turn,p_winner:winner||null
-  });
-  const latest=await rpc('abalone_get_room',{p_room_code:onlineRoomCode,p_player_token:onlineToken});
-  lastRemoteUpdatedAt=latest.updated_at;
-  if(winner && updatePending) setTimeout(()=>location.reload(),5000);
- }catch(e){
-  status.textContent='Synchronisierung fehlgeschlagen: '+e.message+' · Bitte nicht weiterspielen und Verbindung prüfen.';
- }finally{onlineBusy=false;}
-}
+
 async function pollOnlineRoom(){
  if(!multiplayer||!onlineRoomCode||!onlineToken)return;
  try{

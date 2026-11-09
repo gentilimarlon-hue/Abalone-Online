@@ -417,6 +417,7 @@ function updatePlayerLabels(){
  else{wName.textContent=mine;bName.textContent='Mitspieler';wRating.textContent=myRating;bRating.textContent='';}
 }
 function updateUI(){
+ updatePlayerLabels();
  document.getElementById('pBlack').classList.toggle('active',turn==='b'&&!gameOver);
  document.getElementById('pWhite').classList.toggle('active',turn==='w'&&!gameOver);
  document.getElementById('blackCount').textContent=[...pieces.values()].filter(c=>c==='b').length+' Kugeln · '+lost.b+' Verlustpunkte';
@@ -656,7 +657,7 @@ else{showScreen(loginScreen);if(pendingInvite)document.getElementById('loginMess
 
 // Versionsprüfung: Pages liefert neue index.html/version.json; bei laufendem Match
 // wird ein Reload bis zum Ende aufgeschoben, damit kein Spielzug verloren geht.
-const APP_VERSION='20.2.1';
+const APP_VERSION='20.3.0';
 let updatePending=false;
 // Versionsprüfung ohne automatischen Reload: Ein Versionsunterschied darf
 // niemals eine Reload-Schleife auslösen. Aktualisierungen erfolgen manuell.

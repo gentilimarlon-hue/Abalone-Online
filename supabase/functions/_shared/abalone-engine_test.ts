@@ -4,6 +4,18 @@ import { applyAuthoritativeMove, type SerializedState } from "./abalone-engine.t
 function state(pieces:[string,"b"|"w"][],turn:"b"|"w"="b",radius:3|4=4,bombs:{b:string|null;w:string|null}={b:null,w:null},lost={b:0,w:0}):SerializedState {
  return {radius,pieces,turn,bombs,lost,gameOver:false,timed:false};
 }
+Deno.test("rejects non-canonical coordinate aliases",()=>{
+ const s=state([["01,0","b"]]);
+ assertThrows(()=>applyAuthoritativeMove(s,{keys:["01,0"],dq:0,dr:1}));
+});
+Deno.test("rejects a forged game-over flag",()=>{
+ const s=state([["0,0","b"]]);s.lost.w=6;
+ assertThrows(()=>applyAuthoritativeMove(s,{keys:["0,0"],dq:0,dr:1}));
+});
+Deno.test("rejects malformed state with duplicate coordinates under alternate spelling",()=>{
+ const s=state([["1,0","b"],["01,0","w"]]);
+ assertThrows(()=>applyAuthoritativeMove(s,{keys:["1,0"],dq:0,dr:1}));
+});
 Deno.test("rejects opponent marble, forged direction and duplicate selection",()=>{
  assertThrows(()=>applyAuthoritativeMove(state([["0,0","b"],["1,0","w"]]),{keys:["1,0"],dq:0,dr:1}));
  assertThrows(()=>applyAuthoritativeMove(state([["0,0","b"]]),{keys:["0,0"],dq:2,dr:0}));

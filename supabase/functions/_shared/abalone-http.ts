@@ -1,7 +1,7 @@
 import type { MoveCommand } from "./abalone-engine.ts";
 
 export function parseBearerToken(header: string | null): string | null {
-  const match = (header || "").match(/^Bearer\\s+(\\S+)$/i);
+  const match = (header || "").match(/^Bearer\s+(\S+)$/i);
   return match ? match[1] : null;
 }
 

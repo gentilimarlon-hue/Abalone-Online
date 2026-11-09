@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { applyAuthoritativeMove, type SerializedState } from "../_shared/abalone-engine.ts";
+import { applyAuthoritativeMove, type MoveCommand, type SerializedState } from "../_shared/abalone-engine.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -42,7 +42,20 @@ Deno.serve(async (req) => {
     }
     const roomCode = String(body.room_code || "").trim().toUpperCase();
     const playerToken = String(body.player_token || "");
-    const command = body.move;
+    const rawMove = body.move;
+    if (!rawMove || typeof rawMove !== "object" || Array.isArray(rawMove)) {
+      return json({ error: "Invalid move command" }, 400);
+    }
+    const move = rawMove as Record<string, unknown>;
+    if (!Array.isArray(move.keys) || !move.keys.every((key): key is string => typeof key === "string") ||
+        !Number.isInteger(move.dq) || !Number.isInteger(move.dr)) {
+      return json({ error: "Invalid move command" }, 400);
+    }
+    const command: MoveCommand = {
+      keys: move.keys,
+      dq: move.dq as number,
+      dr: move.dr as number,
+    };
     if (!/^[A-F0-9]{6}$/.test(roomCode) || playerToken.length < 32) return json({ error: "Invalid room credentials" }, 400);
 
     const { data: room, error: roomError } = await admin.from("game_rooms")

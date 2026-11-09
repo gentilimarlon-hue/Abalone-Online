@@ -1,7 +1,7 @@
 -- Abalone Online: Spieleraccounts (passwortlos, an ein Gerät gebunden)
 -- In Supabase SQL Editor vollständig ausführen.
 -- Erstellt neue Spieler mit 270 Startpunkten. Namen sind global eindeutig.
--- Der Browser speichert den zufälligen Gerätetoken lokal; die Datenbank speichert nur dessen Hash.
+-- Spielernamen dienen vorerst als einfache Anmeldung ohne Passwort. Mehrere Geräte können denselben Account verwenden.
 
 create extension if not exists pgcrypto with schema extensions;
 
@@ -21,6 +21,19 @@ create table if not exists public.players (
 create unique index if not exists players_username_normalized_uidx
   on public.players(username_normalized);
 
+create table if not exists public.player_devices (
+  id bigint generated always as identity primary key,
+  player_id uuid not null references public.players(id) on delete cascade,
+  device_token_hash text not null unique,
+  created_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now()
+);
+
+-- Bestehende Gerätekennungen aus der ersten Account-Version übernehmen.
+insert into public.player_devices(player_id,device_token_hash)
+select id,device_token_hash from public.players
+on conflict (device_token_hash) do nothing;
+
 create table if not exists public.rating_history (
   id bigint generated always as identity primary key,
   player_id uuid not null references public.players(id) on delete cascade,
@@ -38,8 +51,10 @@ create index if not exists rating_history_player_created_idx
 
 alter table public.players enable row level security;
 alter table public.rating_history enable row level security;
+alter table public.player_devices enable row level security;
 revoke all on public.players from anon, authenticated;
 revoke all on public.rating_history from anon, authenticated;
+revoke all on public.player_devices from anon, authenticated;
 
 create or replace function public.abalone_register_player(
   p_username text,
@@ -54,6 +69,7 @@ declare
   v_name text;
   v_hash text;
   v_player public.players%rowtype;
+  v_created boolean := false;
 begin
   v_name := btrim(coalesce(p_username,''));
   if char_length(v_name) < 3 or char_length(v_name) > 20
@@ -63,33 +79,27 @@ begin
   if p_device_token is null or char_length(p_device_token) < 32 then
     raise exception 'Ungültige Gerätekennung.';
   end if;
-
   v_hash := encode(extensions.digest(convert_to(p_device_token,'UTF8'),'sha256'),'hex');
 
-  select * into v_player
-  from public.players
-  where username_normalized = lower(v_name)
-  for update;
+  select * into v_player from public.players
+  where username_normalized = lower(v_name) for update;
 
-  if found then
-    if v_player.device_token_hash <> v_hash then
-      raise exception 'Dieser Spielername ist bereits vergeben. Auf diesem Gerät kannst du nur den Account wiederverwenden, der hier erstellt wurde.';
-    end if;
-    return jsonb_build_object(
-      'id',v_player.id,'username',v_player.username,'rating',v_player.rating,
-      'games_played',v_player.games_played,'wins',v_player.wins,'losses',v_player.losses,
-      'created',false
-    );
+  if not found then
+    insert into public.players(username,device_token_hash)
+    values(v_name,v_hash) returning * into v_player;
+    v_created := true;
   end if;
 
-  insert into public.players(username,device_token_hash)
-  values(v_name,v_hash)
-  returning * into v_player;
+  -- Absichtlich passwortlos: Wer den Namen kennt, kann sich vorerst anmelden.
+  insert into public.player_devices(player_id,device_token_hash,last_seen_at)
+  values(v_player.id,v_hash,now())
+  on conflict (device_token_hash) do update
+    set player_id=excluded.player_id,last_seen_at=now();
 
   return jsonb_build_object(
     'id',v_player.id,'username',v_player.username,'rating',v_player.rating,
     'games_played',v_player.games_played,'wins',v_player.wins,'losses',v_player.losses,
-    'created',true
+    'created',v_created
   );
 end;
 $$;
@@ -108,8 +118,12 @@ begin
     raise exception 'Ungültige Gerätekennung.';
   end if;
   v_hash := encode(extensions.digest(convert_to(p_device_token,'UTF8'),'sha256'),'hex');
-  select * into v_player from public.players where device_token_hash=v_hash;
+  select p.* into v_player
+  from public.players p
+  join public.player_devices d on d.player_id=p.id
+  where d.device_token_hash=v_hash;
   if not found then return null; end if;
+  update public.player_devices set last_seen_at=now() where device_token_hash=v_hash;
   return jsonb_build_object(
     'id',v_player.id,'username',v_player.username,'rating',v_player.rating,
     'games_played',v_player.games_played,'wins',v_player.wins,'losses',v_player.losses

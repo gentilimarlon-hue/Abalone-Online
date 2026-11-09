@@ -1,0 +1,20 @@
+name: Secure Elo checks
+on:
+  push:
+    branches: [feature/secure-accounts-elo]
+  pull_request:
+    branches: [main]
+jobs:
+  deno-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check authoritative engine
+        run: deno check supabase/functions/_shared/abalone-engine.ts
+      - name: Run engine tests
+        run: deno test --allow-net supabase/functions/_shared/abalone-engine_test.ts
+      - name: Check Edge Function syntax
+        run: deno check supabase/functions/abalone-move/index.ts

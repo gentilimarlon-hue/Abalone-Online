@@ -478,7 +478,14 @@ async function registerPlayer(){
   const result=await authRequest('signup',{email,password,data:{username:name}});
   if(result.access_token){saveAuthSession(result);await loadAuthenticatedProfile();showScreen(mainMenu);continuePendingInvite();}
   else message.textContent='Registrierung angelegt. Bitte bestätige zuerst den Link in deiner E-Mail und melde dich danach an.';
- }catch(e){message.textContent=e.message;}
+ }catch(e){
+  const detail=String(e.message||'');
+  message.textContent=/players_username_normalized_uidx|duplicate key|unique constraint/i.test(detail)
+   ? 'Dieser Spielername ist bereits vergeben. Bitte wähle einen anderen.'
+   : /already registered|user already exists/i.test(detail)
+    ? 'Für diese E-Mail-Adresse existiert bereits ein Account. Bitte melde dich an.'
+    : detail;
+ }
  finally{button.disabled=false;}
 }
 async function loginPlayer(){

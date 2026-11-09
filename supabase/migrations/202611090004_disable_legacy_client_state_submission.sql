@@ -24,6 +24,4 @@ grant execute on function public.abalone_create_room(text,integer,jsonb) to auth
 revoke all on function public.abalone_join_room(text) from public, anon;
 grant execute on function public.abalone_join_room(text) to authenticated;
 
--- The browser may only read rooms through the token-checked RPC.
-revoke all on function public.abalone_get_room(text,text) from public;
-grant execute on function public.abalone_get_room(text,text) to anon, authenticated;
+-- Room-read permissions are applied after the RPC is created in migration 005.

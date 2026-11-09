@@ -60,8 +60,8 @@ export function applyAuthoritativeMove(input: SerializedState, command: MoveComm
     let q=front[0]+dq,r=front[1]+dr;
     while(inside(q,r,radius)&&pieces.has(key(q,r))&&pieces.get(key(q,r))!==turn){opponents.push(key(q,r));q+=dq;r+=dr;}
     if(opponents.length && (opponents.length>=keys.length || opponents.length>2 || (inside(q,r,radius)&&pieces.has(key(q,r))))) throw new Error("Illegal push");
+    if(inside(q,r,radius)&&pieces.has(key(q,r))&&pieces.get(key(q,r))===turn)throw new Error("Own marble blocks the move");
     if(!opponents.length && !inside(front[0]+dq,front[1]+dr,radius))throw new Error("Move leaves board");
-    if(opponents.length && !inside(q,r,radius) && opponents.length===0)throw new Error("Invalid push");
   } else {
     for(const [q,r] of arr.map(([x,y])=>[x+dq,y+dr] as [number,number])){
       if(!inside(q,r,radius)||pieces.has(key(q,r)))throw new Error("Illegal sidestep");

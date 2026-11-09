@@ -19,7 +19,7 @@ begin
       add constraint players_auth_user_id_fkey
       foreign key (auth_user_id) references auth.users(id) on delete set null;
   end if;
-end; $;
+end; $$;
 
 create unique index if not exists players_auth_user_id_uidx
   on public.players(auth_user_id)
@@ -52,7 +52,7 @@ begin
       add constraint game_rooms_winner_check
       check (winner is null or winner in ('b','w'));
   end if;
-end; $;
+end; $$;
 
 create table if not exists public.rated_matches (
   id uuid primary key default gen_random_uuid(),

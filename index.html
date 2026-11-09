@@ -61,7 +61,7 @@ main{max-width:720px;margin:auto;padding:16px 12px 28px}.screen{display:none}.sc
   <button class="btn menu-btn" id="multiplayerMode">Online 1 gegen 1<small>Mit Einladung auf zwei Geräten spielen</small></button>\n  <button class="btn menu-btn" id="leaderboardButton">Rangliste<small>Die besten Spieler nach Rating</small></button>
  </div>
 </section>
-<section id="leaderboardScreen" class="screen"><header class="top"><h1>Rangliste</h1><p class="sub">Online-Spieler nach Rating</p></header><div class="card" id="leaderboardContent">Rangliste wird geladen …</div><button class="btn menu-back" id="leaderboardBack">Zurück</button></section>\n<section id="localMenu" class="screen">
+<section id="leaderboardScreen" class="screen"><header class="top"><h1>Rangliste</h1><p class="sub">Online-Spieler nach Rating</p></header><div class="card" id="myStatsContent" style="margin-top:14px">Deine Statistik wird geladen …</div><div class="card" id="leaderboardContent">Rangliste wird geladen …</div><button class="btn menu-back" id="leaderboardBack">Zurück</button></section>\n<section id="localMenu" class="screen">
  <header class="top"><h1>Abalone</h1><p class="sub">Einzelgerät · Spielmodus wählen</p></header>
  <div class="menu-options">
   <button class="btn menu-btn" id="standardMode">Standard<small>Klassisches Spielfeld</small></button>
@@ -482,12 +482,42 @@ document.getElementById('logoutButton').addEventListener('click',()=>{
 function continuePendingInvite(){if(!pendingInvite)return;const code=pendingInvite;pendingInvite=null;document.getElementById('roomCodeInput').value=code;showScreen(multiMenu);joinOnlineRoom(code);}
 
 async function loadLeaderboard(){
- const box=document.getElementById('leaderboardContent');box.textContent='Rangliste wird geladen …';
+ const box=document.getElementById('leaderboardContent');
+ const stats=document.getElementById('myStatsContent');
+ box.textContent='Rangliste wird geladen …';
+ if(!currentPlayer){
+  stats.innerHTML='<b>Deine Statistik</b><p class="hint">Melde dich mit einem Spielernamen an, um dein Rating und deine Spielstatistik zu sehen. Als Gast spielst du ohne Wertung.</p>';
+ }else{
+  stats.innerHTML='<b>Deine Statistik</b><p class="hint">Spielerdaten werden geladen …</p>';
+ }
  try{
+  if(currentPlayer){
+   try{
+    const fresh=await rpc('abalone_get_player',{p_device_token:getDeviceToken()});
+    if(fresh){currentPlayer=fresh;renderProfile();}
+   }catch(e){console.warn('Spielerstatistik konnte nicht aktualisiert werden:',e);}
+  }
   const rows=await rpc('abalone_get_leaderboard',{p_limit:20});
-  if(!rows||!rows.length){box.textContent='Noch keine gewerteten Spiele.';return;}
-  box.innerHTML='<div style="display:grid;grid-template-columns:36px 1fr auto;gap:9px;font-weight:700;padding:5px 0"><span>Pl.</span><span>Spieler</span><span>Punkte</span></div>'+rows.map((p,i)=>'<div style="display:grid;grid-template-columns:36px 1fr auto;gap:9px;padding:9px 0;border-top:1px solid #ffffff22"><span>'+(i+1)+'.</span><span>'+escapeHtml(p.username)+'</span><b>'+p.rating+'</b></div>').join('');
- }catch(e){box.textContent='Rangliste noch nicht verfügbar: '+e.message;}
+  if(currentPlayer){
+   const me=currentPlayer;
+   const rank=Array.isArray(rows)?rows.findIndex(p=>String(p.username).toLowerCase()===String(me.username).toLowerCase()):-1;
+   const rankText=rank>=0?'Platz '+(rank+1)+' der Top 20':'Nicht unter den Top 20';
+   const games=Number(me.games_played)||0,wins=Number(me.wins)||0,losses=Number(me.losses)||0;
+   stats.innerHTML='<b>Deine Statistik</b><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px">'+
+    '<div><div class="hint">Rating</div><strong style="font-size:1.35rem">'+(Number(me.rating)||270)+'</strong></div>'+
+    '<div><div class="hint">Rang</div><strong>'+rankText+'</strong></div>'+
+    '<div><div class="hint">Gespielte Partien</div><strong>'+games+'</strong></div>'+
+    '<div><div class="hint">Siege / Niederlagen</div><strong>'+wins+' / '+losses+'</strong></div></div>';
+  }
+  if(!rows||!rows.length){box.textContent='Noch keine gewerteten Spieler in der Rangliste.';return;}
+  box.innerHTML='<b>Rangliste · Top 20</b><div style="display:grid;grid-template-columns:36px 1fr auto;gap:9px;font-weight:700;padding:12px 0 5px"><span>Pl.</span><span>Spieler</span><span>Punkte</span></div>'+rows.map((p,i)=>{
+   const mine=currentPlayer&&String(p.username).toLowerCase()===String(currentPlayer.username).toLowerCase();
+   return '<div style="display:grid;grid-template-columns:36px 1fr auto;gap:9px;padding:10px 7px;border-top:1px solid #ffffff22;border-radius:7px;'+(mine?'background:#d5b77a22;':'')+'"><span>'+(i+1)+'.</span><span>'+escapeHtml(p.username)+(mine?' <small>(Du)</small>':'')+'</span><b>'+Number(p.rating||0)+'</b></div>';
+  }).join('');
+ }catch(e){
+  box.textContent='Rangliste noch nicht verfügbar: '+e.message;
+  if(currentPlayer)stats.textContent='Deine Statistik konnte nicht geladen werden.';
+ }
 }
 function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 document.getElementById('leaderboardButton').addEventListener('click',()=>{showScreen(leaderboardScreen);loadLeaderboard();});

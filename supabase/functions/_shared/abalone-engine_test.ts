@@ -9,6 +9,10 @@ Deno.test("rejects opponent marble, forged direction and duplicate selection",()
  assertThrows(()=>applyAuthoritativeMove(state([["0,0","b"]]),{keys:["0,0"],dq:2,dr:0}));
  assertThrows(()=>applyAuthoritativeMove(state([["0,0","b"]]),{keys:["0,0","0,0"],dq:0,dr:1}));
 });
+Deno.test("rejects an inline move blocked by own marble",()=>{
+ const s=state([["0,0","b"],["1,0","b"]]);
+ assertThrows(()=>applyAuthoritativeMove(s,{keys:["0,0"],dq:1,dr:0}));
+});
 Deno.test("single marble advances and changes turn",()=>{
  const r=applyAuthoritativeMove(state([["0,0","b"]]),{keys:["0,0"],dq:0,dr:1});
  assertEquals(r.state.pieces,[["0,1","b"]]);assertEquals(r.state.turn,"w");

@@ -640,6 +640,7 @@ function setOnlineNotice(text){
 }
 async function createOnlineRoom(radius){
  try{
+  if(!currentPlayer||!authSession?.access_token)throw new Error('Für Online-Partien mit Elo-Wertung musst du dich mit deinem Account anmelden.');
   multiplayer=true;onlineStatus='waiting';onlineColor='b';
   showScreen(gameScreen);init(radius,false,0);
   const result=await rpc('abalone_create_room',{p_mode:radius===3?'mini':'standard',p_minutes:null,p_initial_state:serializeState()});
@@ -660,6 +661,7 @@ async function createOnlineRoom(radius){
 }
 async function joinOnlineRoom(code){
  try{
+  if(!currentPlayer||!authSession?.access_token)throw new Error('Für Online-Partien mit Elo-Wertung musst du dich mit deinem Account anmelden.');
   code=(code||'').trim().toUpperCase();
   if(!/^[A-F0-9]{6}$/.test(code)) throw new Error('Bitte einen gültigen sechsstelligen Einladungscode eingeben.');
   const result=await rpc('abalone_join_room',{p_room_code:code});
@@ -732,7 +734,8 @@ async function sendOnlineMove(mv){
  }finally{onlineBusy=false;}
 }
 async function sendOnlineState(winner){
- if(!multiplayer||!onlineRoomCode||!onlineToken)return;
+ // Legacy browser-trusted state submission is intentionally disabled.
+ return;
  onlineBusy=true;
  try{
   await rpc('abalone_submit_state',{
@@ -781,7 +784,7 @@ else{showScreen(loginScreen);if(pendingInvite)document.getElementById('loginMess
 
 // Versionsprüfung: Pages liefert neue index.html/version.json; bei laufendem Match
 // wird ein Reload bis zum Ende aufgeschoben, damit kein Spielzug verloren geht.
-const APP_VERSION='20.3.0';
+const APP_VERSION='20.4.1';
 let updatePending=false;
 // Versionsprüfung ohne automatischen Reload: Ein Versionsunterschied darf
 // niemals eine Reload-Schleife auslösen. Aktualisierungen erfolgen manuell.

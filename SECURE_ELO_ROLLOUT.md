@@ -25,7 +25,16 @@ The Supabase publishable key in `index.html` is intended for browser use. The se
 
 ## Supabase deployment sequence
 
-1. Confirm the target Supabase project is the intended production project.
+The migrations assume the original application tables already exist. On a fresh Supabase project, first run the repository bootstrap SQL in this order:
+
+1. `schema.sql` (creates `game_rooms`).
+2. `supabase/players.sql` (creates `players`, `rating_history`, and the legacy RPCs that migration 006 retires).
+
+On an existing project, verify those tables and baseline RPCs are present before continuing; do not blindly rerun destructive or legacy setup steps.
+
+Then continue with the secure rollout:
+
+1. Confirm the target Supabase project is the intended test project.
 2. Review and apply migrations in filename order:
    - `202611090001_secure_accounts_elo_foundation.sql`
    - `202611090002_bind_authenticated_room_players.sql`

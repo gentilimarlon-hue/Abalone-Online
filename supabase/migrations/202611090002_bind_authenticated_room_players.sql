@@ -62,7 +62,7 @@ begin
      v_initial_state,'b',now(),now(),now()+interval '24 hours',v_player_id)
   returning id into v_id;
 
-  return jsonb_build_object('room_code',v_code,'player_token',v_token,'player_color','b','room_id',v_id);
+  return jsonb_build_object('room_code',v_code,'player_token',v_token,'player_color','b','room_id',v_id,'state',v_initial_state);
 end;
 $$;
 

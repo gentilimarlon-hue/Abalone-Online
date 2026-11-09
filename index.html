@@ -48,12 +48,18 @@ main{max-width:720px;margin:auto;padding:16px 12px 28px}.screen{display:none}.sc
 <body><div id="profilePill" style="display:none;position:fixed;top:10px;right:10px;z-index:1000;font-size:.8rem;text-align:right">
 <button id="profileButton" class="btn" style="min-width:0;padding:7px 10px;border-radius:20px;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></button>
 <div id="profileActions" style="display:none;background:#1b3732;border:1px solid #6d8a80;border-radius:10px;padding:8px;margin-top:5px"><button id="logoutButton" class="btn" style="min-width:0;padding:7px 10px">Abmelden</button></div></div>
-<section id="loginScreen" class="screen active"><header class="top"><h1>Abalone</h1><p class="sub">Wie möchtest du spielen?</p></header>
-<div class="card" style="max-width:440px;margin:30px auto 0"><label for="playerNameInput">Spielername</label>
-<input id="playerNameInput" maxlength="20" autocomplete="nickname" placeholder="Dein Name (3–20 Zeichen)" style="width:100%;margin-top:8px;padding:13px;border-radius:10px;border:1px solid #6d8a80;background:#102522;color:#fff8e9;font-size:1rem">
-<button class="btn primary" id="accountLoginBtn" style="width:100%;margin-top:12px">Account erstellen / anmelden</button>
+<section id="loginScreen" class="screen active"><header class="top"><h1>Abalone</h1><p class="sub">Mit deinem Account anmelden</p></header>
+<div class="card" style="max-width:440px;margin:30px auto 0">
+<label for="playerNameInput">Spielername (nur bei Registrierung)</label>
+<input id="playerNameInput" maxlength="20" autocomplete="nickname" placeholder="Spielername (3–20 Zeichen)" style="width:100%;margin-top:8px;padding:13px;border-radius:10px;border:1px solid #6d8a80;background:#102522;color:#fff8e9;font-size:1rem">
+<label for="playerEmailInput" style="display:block;margin-top:12px">E-Mail-Adresse</label>
+<input id="playerEmailInput" type="email" autocomplete="email" placeholder="name@beispiel.de" style="width:100%;margin-top:8px;padding:13px;border-radius:10px;border:1px solid #6d8a80;background:#102522;color:#fff8e9;font-size:1rem">
+<label for="playerPasswordInput" style="display:block;margin-top:12px">Passwort</label>
+<input id="playerPasswordInput" type="password" minlength="8" autocomplete="current-password" placeholder="Mindestens 8 Zeichen" style="width:100%;margin-top:8px;padding:13px;border-radius:10px;border:1px solid #6d8a80;background:#102522;color:#fff8e9;font-size:1rem">
+<button class="btn primary" id="accountRegisterBtn" style="width:100%;margin-top:12px">Account erstellen</button>
+<button class="btn" id="accountLoginBtn" style="width:100%;margin-top:9px">Anmelden</button>
 <button class="btn" id="guestContinueBtn" style="width:100%;margin-top:9px">Als Gast fortfahren</button>
-<p class="hint" id="loginMessage">Ein neuer Account startet mit 270 Punkten. Dein Account bleibt auf diesem Gerät angemeldet.</p></div></section><main>
+<p class="hint" id="loginMessage">Registriere dich mit E-Mail und Passwort. Spielername und Rating sind öffentlich, deine E-Mail bleibt privat.</p></div></section><main>
 <section id="mainMenu" class="screen">
  <header class="top"><h1>Abalone</h1><p class="sub">Wähle deine Spielart</p></header>
  <div class="menu-options">
@@ -446,32 +452,60 @@ function showScreen(screen){
 
 let currentPlayer=null, isGuest=true, pendingInvite=null;
 const DEVICE_KEY='abalone_device_token_v1';
-function getDeviceToken(){
- let token=localStorage.getItem(DEVICE_KEY);
- if(!token){const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);token=[...bytes].map(b=>b.toString(16).padStart(2,'0')).join('');localStorage.setItem(DEVICE_KEY,token);}
- return token;
-}
 function renderProfile(){
  const pill=document.getElementById('profilePill');
  if(!currentPlayer){pill.style.display='none';return;}
  pill.style.display='block';document.getElementById('profileButton').textContent=currentPlayer.username+' · '+currentPlayer.rating;
 }
-function enterAsGuest(){currentPlayer=null;isGuest=true;renderProfile();showScreen(mainMenu);continuePendingInvite();}
+function enterAsGuest(){currentPlayer=null;isGuest=true;saveAuthSession(null);renderProfile();showScreen(mainMenu);continuePendingInvite();}
+async function loadAuthenticatedProfile(){
+ const player=await rpc('abalone_get_my_player',{});
+ if(!player)throw new Error('Kein Spielerprofil mit diesem Account verknüpft.');
+ currentPlayer=player;isGuest=false;renderProfile();return player;
+}
+async function registerPlayer(){
+ const name=document.getElementById('playerNameInput').value.trim();
+ const email=document.getElementById('playerEmailInput').value.trim();
+ const password=document.getElementById('playerPasswordInput').value;
+ const message=document.getElementById('loginMessage'),button=document.getElementById('accountRegisterBtn');
+ if(name.length<3||name.length>20){message.textContent='Der Spielername muss 3–20 Zeichen lang sein.';return;}
+ if(!/^[A-Za-z0-9_ -]+$/.test(name)){message.textContent='Der Spielername darf nur Buchstaben, Zahlen, Leerzeichen, _ und - enthalten.';return;}
+ if(password.length<8){message.textContent='Bitte verwende mindestens 8 Zeichen als Passwort.';return;}
+ button.disabled=true;message.textContent='Account wird erstellt …';
+ try{
+  const result=await authRequest('signup',{email,password,data:{username:name}});
+  if(result.access_token){saveAuthSession(result);await loadAuthenticatedProfile();showScreen(mainMenu);continuePendingInvite();}
+  else message.textContent='Registrierung angelegt. Bitte bestätige zuerst den Link in deiner E-Mail und melde dich danach an.';
+ }catch(e){message.textContent=e.message;}
+ finally{button.disabled=false;}
+}
 async function loginPlayer(){
- const name=document.getElementById('playerNameInput').value.trim(), message=document.getElementById('loginMessage'), button=document.getElementById('accountLoginBtn');
- if(name.length<3){message.textContent='Bitte gib einen Namen mit mindestens 3 Zeichen ein.';return;}
- button.disabled=true;message.textContent='Account wird geladen …';
- try{const result=await rpc('abalone_register_player',{p_username:name,p_device_token:getDeviceToken()});currentPlayer=result;isGuest=false;renderProfile();showScreen(mainMenu);continuePendingInvite();}
- catch(e){message.textContent=e.message||'Anmeldung fehlgeschlagen.';}
+ const email=document.getElementById('playerEmailInput').value.trim();
+ const password=document.getElementById('playerPasswordInput').value;
+ const message=document.getElementById('loginMessage'),button=document.getElementById('accountLoginBtn');
+ if(!email||!password){message.textContent='Bitte E-Mail-Adresse und Passwort eingeben.';return;}
+ button.disabled=true;message.textContent='Anmeldung läuft …';
+ try{
+  const session=await authRequest('token?grant_type=password',{email,password});
+  saveAuthSession(session);await loadAuthenticatedProfile();showScreen(mainMenu);continuePendingInvite();
+ }catch(e){saveAuthSession(null);message.textContent=e.message;}
  finally{button.disabled=false;}
 }
 async function restorePlayer(){
- const token=localStorage.getItem(DEVICE_KEY);if(!token)return false;
- try{const player=await rpc('abalone_get_player',{p_device_token:token});if(player){currentPlayer=player;isGuest=false;renderProfile();return true;}}catch(e){console.warn(e);}
- return false;
+ try{
+  const saved=localStorage.getItem(AUTH_SESSION_KEY);if(!saved)return false;
+  authSession=JSON.parse(saved);
+  if(!authSession.refresh_token)throw new Error('Sitzung abgelaufen');
+  if(!authSession.expires_at||authSession.expires_at<Date.now()/1000+60){
+   const refreshed=await authRequest('token?grant_type=refresh_token',{refresh_token:authSession.refresh_token});
+   saveAuthSession(refreshed);
+  }
+  await loadAuthenticatedProfile();return true;
+ }catch(e){console.warn('Sitzung konnte nicht wiederhergestellt werden:',e);saveAuthSession(null);return false;}
 }
+document.getElementById('accountRegisterBtn').addEventListener('click',registerPlayer);
 document.getElementById('accountLoginBtn').addEventListener('click',loginPlayer);
-document.getElementById('playerNameInput').addEventListener('keydown',e=>{if(e.key==='Enter')loginPlayer();});
+document.getElementById('playerPasswordInput').addEventListener('keydown',e=>{if(e.key==='Enter')loginPlayer();});
 document.getElementById('guestContinueBtn').addEventListener('click',enterAsGuest);
 document.getElementById('profileButton').addEventListener('click',()=>{
  const actions=document.getElementById('profileActions');actions.style.display=actions.style.display==='block'?'none':'block';
@@ -480,7 +514,7 @@ document.getElementById('profileButton').addEventListener('click',()=>{
 });
 document.getElementById('logoutButton').addEventListener('click',()=>{
  if(multiplayer&&onlineStatus==='playing'&&!gameOver)return;
- currentPlayer=null;isGuest=true;document.getElementById('profileActions').style.display='none';renderProfile();showScreen(loginScreen);document.getElementById('loginMessage').textContent='Abgemeldet. Gib deinen bisherigen Spielernamen erneut ein, um dich anzumelden.';
+ currentPlayer=null;isGuest=true;saveAuthSession(null);renderProfile();showScreen(loginScreen);
 });
 function continuePendingInvite(){if(!pendingInvite)return;const code=pendingInvite;pendingInvite=null;document.getElementById('roomCodeInput').value=code;showScreen(multiMenu);joinOnlineRoom(code);}
 
@@ -570,10 +604,26 @@ function restoreState(s){
  gameOver=!!s.gameOver;selected=[];
  draw();updateUI();
 }
+let authSession=null;
+const AUTH_SESSION_KEY='abalone_supabase_auth_v1';
+function saveAuthSession(session){
+ authSession=session;
+ if(session)localStorage.setItem(AUTH_SESSION_KEY,JSON.stringify(session));
+ else localStorage.removeItem(AUTH_SESSION_KEY);
+}
+async function authRequest(path,body){
+ const response=await fetch(SUPABASE_URL+'/auth/v1/'+path,{
+  method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},
+  body:JSON.stringify(body)
+ });
+ const raw=await response.text();let data;try{data=raw?JSON.parse(raw):null}catch{data=raw}
+ if(!response.ok)throw new Error(data?.msg||data?.message||data?.error_description||data?.error||'Authentifizierung fehlgeschlagen');
+ return data;
+}
 async function rpc(name,args){
  const response=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+name,{
   method:'POST',
-  headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},
+  headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+(authSession?.access_token||SUPABASE_KEY),'Content-Type':'application/json'},
   body:JSON.stringify(args)
  });
  const body=await response.text();

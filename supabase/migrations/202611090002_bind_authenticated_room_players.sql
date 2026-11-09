@@ -27,6 +27,7 @@ begin
   if p_mode='timed' and (p_minutes is null or p_minutes not in (3,5,10)) then raise exception 'Ungültige Spielzeit'; end if;
 
   select id into v_player_id from public.players where auth_user_id=auth.uid();
+  if v_player_id is null then raise exception 'Bitte zuerst mit einem Spieleraccount anmelden'; end if;
   -- Construct the canonical starting position on the database; never trust
   -- a client-supplied initial board or bomb placement.
   if p_mode='mini' then
@@ -78,6 +79,7 @@ declare
   v_player_id uuid;
 begin
   select id into v_player_id from public.players where auth_user_id=auth.uid();
+  if v_player_id is null then raise exception 'Bitte zuerst mit einem Spieleraccount anmelden'; end if;
   select * into v_room from public.game_rooms
   where room_code=upper(trim(p_room_code)) and status='waiting' and expires_at>now()
   for update;

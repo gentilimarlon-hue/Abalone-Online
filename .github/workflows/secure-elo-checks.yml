@@ -1,0 +1,91 @@
+name: Secure Elo checks
+on:
+  push:
+    branches: [feature/secure-accounts-elo]
+  pull_request:
+    branches: [main]
+jobs:
+  deno-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check authoritative engine
+        run: deno check supabase/functions/_shared/abalone-engine.ts
+      - name: Run engine tests
+        run: deno test --allow-net supabase/functions/_shared/abalone-engine_test.ts
+      - name: Run HTTP request validation tests
+        run: deno test --allow-net supabase/functions/_shared/abalone-http_test.ts
+      - name: Check Edge Function syntax
+        run: deno check supabase/functions/abalone-move/index.ts
+      - name: Ensure legacy passwordless APIs stay revoked
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          sql = Path("supabase/players.sql").read_text(encoding="utf-8")
+          grants = re.findall(
+              r"grant\s+execute\s+on\s+function\s+public\.abalone_(?:register_player|get_player)",
+              sql,
+              re.IGNORECASE,
+          )
+          if grants:
+              raise SystemExit("Legacy passwordless player API grants must remain disabled")
+          PY
+      - name: Check migration block delimiters and prerequisites
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          migrations = sorted(Path("supabase/migrations").glob("*.sql"))
+          if len(migrations) != 6:
+              raise SystemExit(f"Expected six ordered migrations, found {len(migrations)}")
+
+          for path in migrations:
+              sql = path.read_text(encoding="utf-8")
+              blocks = re.findall(r"do\s+\$\$(.*?)\$\$;", sql, re.I | re.S)
+              if len(re.findall(r"do\s+\$\$", sql, re.I)) != len(blocks):
+                  raise SystemExit(f"Unclosed DO block in {path}")
+              for block in blocks:
+                  if not re.search(r"\bend\s*;\s*$", block.strip(), re.I):
+                      raise SystemExit(f"DO block must end with END; in {path}")
+              if re.search(r"^\$;\s*$", sql, re.M):
+                  raise SystemExit(f"Stray dollar delimiter in {path}")
+
+          foundation = migrations[0].read_text(encoding="utf-8")
+          if "alter extension pgcrypto set schema extensions" not in foundation.lower():
+              raise SystemExit("Foundation migration must normalize the pgcrypto schema")
+          print("Migration delimiter and prerequisite guards passed")
+          PY
+      - name: Run PostgreSQL migration and Elo integration tests
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/tests/secure-elo-integration.sql
+      - name: Check browser JavaScript syntax
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script>(.*?)</script>", html, re.S)
+          if len(scripts) != 1:
+              raise SystemExit(f"Expected one inline app script, found {len(scripts)}")
+          Path("/tmp/abalone-app.js").write_text(scripts[0], encoding="utf-8")
+          PY
+          node --check /tmp/abalone-app.js

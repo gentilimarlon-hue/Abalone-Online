@@ -133,8 +133,10 @@ $$;
 
 revoke all on function public.abalone_register_player(text,text) from public;
 revoke all on function public.abalone_get_player(text) from public;
-grant execute on function public.abalone_register_player(text,text) to anon, authenticated;
-grant execute on function public.abalone_get_player(text) to anon, authenticated;
+-- Legacy passwordless APIs are intentionally not executable by browser roles.
+-- Migration 202611090006_disable_legacy_passwordless_player_auth.sql enforces this.
+revoke all on function public.abalone_register_player(text,text) from public, anon, authenticated;
+revoke all on function public.abalone_get_player(text) from public, anon, authenticated;
 
 -- Hinweis: Die Rating-History wird erst beschrieben, wenn die serverseitige
 -- Validierung der vollständigen Abalone-Züge und Spielergebnisse aktiviert ist.

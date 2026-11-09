@@ -138,3 +138,19 @@ grant execute on function public.abalone_get_player(text) to anon, authenticated
 
 -- Hinweis: Die Rating-History wird erst beschrieben, wenn die serverseitige
 -- Validierung der vollständigen Abalone-Züge und Spielergebnisse aktiviert ist.
+
+
+-- Öffentliche Rangliste: nur Anzeigename und Rating werden ausgegeben.
+create or replace function public.abalone_get_leaderboard(p_limit integer default 20)
+returns table(username text, rating integer, games_played integer)
+language sql
+security definer
+set search_path = public
+as $$
+  select p.username, p.rating, p.games_played
+  from public.players p
+  order by p.rating desc, p.games_played desc, p.username asc
+  limit greatest(1, least(coalesce(p_limit,20),100));
+$$;
+revoke all on function public.abalone_get_leaderboard(integer) from public;
+grant execute on function public.abalone_get_leaderboard(integer) to anon, authenticated;

@@ -44,13 +44,13 @@ jobs:
 
           for path in migrations:
               sql = path.read_text(encoding="utf-8")
-              blocks = re.findall(r"do\\s+\\$\\$(.*?)\\$\\$;", sql, re.I | re.S)
-              if len(re.findall(r"do\\s+\\$\\$", sql, re.I)) != len(blocks):
+              blocks = re.findall(r"do\s+\$\$(.*?)\$\$;", sql, re.I | re.S)
+              if len(re.findall(r"do\s+\$\$", sql, re.I)) != len(blocks):
                   raise SystemExit(f"Unclosed DO block in {path}")
               for block in blocks:
-                  if not re.search(r"\\bend\\s*;\\s*$", block.strip(), re.I):
+                  if not re.search(r"\bend\s*;\s*$", block.strip(), re.I):
                       raise SystemExit(f"DO block must end with END; in {path}")
-              if re.search(r"^\\$;\\s*$", sql, re.M):
+              if re.search(r"^\$;\s*$", sql, re.M):
                   raise SystemExit(f"Stray dollar delimiter in {path}")
 
           foundation = migrations[0].read_text(encoding="utf-8")

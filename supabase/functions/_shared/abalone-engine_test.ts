@@ -25,6 +25,16 @@ Deno.test("rejects an inline move blocked by own marble",()=>{
  const s=state([["0,0","b"],["1,0","b"]]);
  assertThrows(()=>applyAuthoritativeMove(s,{keys:["0,0"],dq:1,dr:0}));
 });
+Deno.test("allows a clear sideways move by a straight group",()=>{
+ const s=state([["-1,0","b"],["0,0","b"],["1,0","b"]]);
+ const r=applyAuthoritativeMove(s,{keys:["-1,0","0,0","1,0"],dq:0,dr:1});
+ const m=new Map(r.state.pieces);
+ assertEquals(m.get("-1,1"),"b");assertEquals(m.get("0,1"),"b");assertEquals(m.get("1,1"),"b");
+});
+Deno.test("rejects a sideways move when one destination is occupied",()=>{
+ const s=state([["-1,0","b"],["0,0","b"],["1,0","b"],["0,1","w"]]);
+ assertThrows(()=>applyAuthoritativeMove(s,{keys:["-1,0","0,0","1,0"],dq:0,dr:1}));
+});
 Deno.test("single marble advances and changes turn",()=>{
  const r=applyAuthoritativeMove(state([["0,0","b"]]),{keys:["0,0"],dq:0,dr:1});
  assertEquals(r.state.pieces,[["0,1","b"]]);assertEquals(r.state.turn,"w");

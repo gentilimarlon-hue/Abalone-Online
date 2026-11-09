@@ -52,7 +52,7 @@ begin
       add constraint game_rooms_winner_check
       check (winner is null or winner in ('b','w'));
   end if;
-end $;
+end $$;
 
 create table if not exists public.rated_matches (
   id uuid primary key default gen_random_uuid(),

@@ -533,7 +533,7 @@ async function loadLeaderboard(){
  try{
   if(currentPlayer){
    try{
-    const fresh=await rpc('abalone_get_player',{p_device_token:getDeviceToken()});
+    const fresh=await rpc('abalone_get_my_player',{});
     if(fresh){currentPlayer=fresh;renderProfile();}
    }catch(e){console.warn('Spielerstatistik konnte nicht aktualisiert werden:',e);}
   }

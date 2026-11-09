@@ -28,6 +28,8 @@ jobs:
         run: deno check supabase/functions/_shared/abalone-engine.ts
       - name: Run engine tests
         run: deno test --allow-net supabase/functions/_shared/abalone-engine_test.ts
+      - name: Run HTTP request validation tests
+        run: deno test --allow-net supabase/functions/_shared/abalone-http_test.ts
       - name: Check Edge Function syntax
         run: deno check supabase/functions/abalone-move/index.ts
       - name: Ensure legacy passwordless APIs stay revoked

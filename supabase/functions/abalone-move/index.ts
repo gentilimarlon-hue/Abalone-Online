@@ -26,8 +26,20 @@ Deno.serve(async (req) => {
     if (authError || !authData.user) return json({ error: "Invalid session" }, 401);
     const userId = authData.user.id;
 
+    if (!url || !anon || !service) {
+      return json({ error: "Game service is not configured" }, 503);
+    }
     const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
-    const body = await req.json();
+    let body: Record<string, unknown>;
+    try {
+      const parsed: unknown = await req.json();
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return json({ error: "Invalid request body" }, 400);
+      }
+      body = parsed as Record<string, unknown>;
+    } catch {
+      return json({ error: "Invalid JSON body" }, 400);
+    }
     const roomCode = String(body.room_code || "").trim().toUpperCase();
     const playerToken = String(body.player_token || "");
     const command = body.move;
@@ -53,7 +65,12 @@ Deno.serve(async (req) => {
     if (!playerId && profile?.id) return json({ error: "Account was not bound to this room; create a new room" }, 403);
     if (room.current_turn !== color) return json({ error: "Not your turn" }, 409);
 
-    const result = applyAuthoritativeMove(room.state as SerializedState, command);
+    let result: ReturnType<typeof applyAuthoritativeMove>;
+    try {
+      result = applyAuthoritativeMove(room.state as SerializedState, command);
+    } catch (error) {
+      return json({ error: error instanceof Error ? error.message : "Invalid move" }, 400);
+    }
     const { data: commit, error: commitError } = await admin.rpc("abalone_commit_server_move", {
       p_room_id: room.id,
       p_expected_updated_at: room.updated_at,
@@ -68,6 +85,7 @@ Deno.serve(async (req) => {
     const rating = commit?.rating || null;
     return json({ ok: true, state: result.state, winner: result.winner, rating });
   } catch (error) {
-    return json({ error: error instanceof Error ? error.message : "Unexpected server error" }, 400);
+    console.error("abalone-move failed", error);
+    return json({ error: "Internal game server error" }, 500);
   }
 });

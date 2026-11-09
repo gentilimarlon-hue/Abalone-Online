@@ -77,6 +77,15 @@ begin
   v_room_id := (v_room->>'room_id')::uuid;
   if v_room->>'player_color' <> 'b' then raise exception 'Host color should be black'; end if;
 
+  -- The host must not be able to occupy both seats.
+  begin
+    perform set_config('request.jwt.claim.sub',v_host::text,true);
+    perform public.abalone_join_room(v_room_code);
+    raise exception 'Host self-join should have been rejected';
+  exception when others then
+    if sqlerrm = 'Host self-join should have been rejected' then raise; end if;
+  end;
+
   perform set_config('request.jwt.claim.sub',v_guest::text,true);
   v_join := public.abalone_join_room(v_room_code);
   if v_join->>'player_color' <> 'w' then raise exception 'Guest color should be white'; end if;
@@ -88,6 +97,16 @@ begin
   v_state := jsonb_set(v_state,'{gameOver}','true'::jsonb);
 
   perform set_config('request.jwt.claim.role','service_role',true);
+  -- A stale snapshot must not overwrite a newer room state.
+  begin
+    perform public.abalone_commit_server_move(
+      v_room_id,v_updated_at - interval '1 second',v_state,'b'
+    );
+    raise exception 'Stale compare-and-swap should have been rejected';
+  exception when others then
+    if sqlerrm = 'Stale compare-and-swap should have been rejected' then raise; end if;
+  end;
+
   v_settlement := public.abalone_commit_server_move(
     v_room_id,v_updated_at,v_state,'b'
   );

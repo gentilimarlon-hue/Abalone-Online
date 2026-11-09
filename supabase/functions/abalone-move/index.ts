@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { applyAuthoritativeMove, type MoveCommand, type SerializedState } from "../_shared/abalone-engine.ts";
+import { applyAuthoritativeMove, type SerializedState } from "../_shared/abalone-engine.ts";
+import { parseBearerToken, parseMoveCommand, readLimitedJson } from "../_shared/abalone-http.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -33,41 +34,21 @@ Deno.serve(async (req) => {
     const userId = authData.user.id;
 
     const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
-    const declaredLength = Number(req.headers.get("Content-Length") || "0");
-    if (declaredLength > 16_384) return json({ error: "Request body too large" }, 413);
-
     let body: Record<string, unknown>;
     try {
-      const rawBody = await req.text();
-      if (new TextEncoder().encode(rawBody).byteLength > 16_384) {
-        return json({ error: "Request body too large" }, 413);
-      }
-      const parsed: unknown = JSON.parse(rawBody);
+      const parsed = await readLimitedJson(req);
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
         return json({ error: "Invalid request body" }, 400);
       }
       body = parsed as Record<string, unknown>;
-    } catch {
+    } catch (error) {
+      if (error instanceof RangeError) return json({ error: "Request body too large" }, 413);
       return json({ error: "Invalid JSON body" }, 400);
     }
     const roomCode = String(body.room_code || "").trim().toUpperCase();
     const playerToken = String(body.player_token || "");
-    const rawMove = body.move;
-    if (!rawMove || typeof rawMove !== "object" || Array.isArray(rawMove)) {
-      return json({ error: "Invalid move command" }, 400);
-    }
-    const move = rawMove as Record<string, unknown>;
-    if (!Array.isArray(move.keys) || move.keys.length < 1 || move.keys.length > 3 ||
-        !move.keys.every((key): key is string => typeof key === "string" && key.length <= 16) ||
-        !Number.isInteger(move.dq) || !Number.isInteger(move.dr) ||
-        Math.abs(move.dq as number) > 1 || Math.abs(move.dr as number) > 1) {
-      return json({ error: "Invalid move command" }, 400);
-    }
-    const command: MoveCommand = {
-      keys: move.keys,
-      dq: move.dq as number,
-      dr: move.dr as number,
-    };
+    const command = parseMoveCommand(body.move);
+    if (!command) return json({ error: "Invalid move command" }, 400);
     if (!/^[A-F0-9]{6}$/.test(roomCode) || playerToken.length < 32) return json({ error: "Invalid room credentials" }, 400);
 
     const { data: room, error: roomError } = await admin.from("game_rooms")

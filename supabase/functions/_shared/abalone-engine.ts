@@ -23,7 +23,8 @@ function validateState(s: SerializedState) {
   for (const entry of s.pieces) {
     if (!Array.isArray(entry) || entry.length!==2 || !["b","w"].includes(entry[1])) throw new Error("Invalid marble");
     const [k] = entry; const [q,r] = coords(k);
-    if (!Number.isInteger(q)||!Number.isInteger(r)||!inside(q,r,s.radius)||seen.has(k)) throw new Error("Invalid marble position");
+    if (typeof k!=="string" || !Number.isInteger(q)||!Number.isInteger(r)||
+        key(q,r)!==k || !inside(q,r,s.radius)||seen.has(k)) throw new Error("Invalid marble position");
     seen.add(k);
   }
   for (const color of ["b","w"] as Color[]) {
@@ -31,6 +32,9 @@ function validateState(s: SerializedState) {
     if (bomb!==null && (!seen.has(bomb) || s.pieces.find(p=>p[0]===bomb)?.[1]!==color)) throw new Error("Invalid bomb position");
     if (!Number.isInteger(s.lost[color]) || s.lost[color]<0 || s.lost[color]>20) throw new Error("Invalid loss counter");
   }
+  const threshold=s.radius===3?3:6;
+  const terminal=s.lost.b>=threshold || s.lost.w>=threshold;
+  if (s.gameOver!==terminal) throw new Error("Inconsistent game-over state");
 }
 
 export function applyAuthoritativeMove(input: SerializedState, command: MoveCommand): MoveResult {

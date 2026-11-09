@@ -23,8 +23,9 @@ Deno.serve(async (req) => {
     }
 
     const authHeader = req.headers.get("Authorization") || "";
-    const jwt = authHeader.replace(/^Bearer\s+/i, "");
-    if (!jwt) return json({ error: "Authentication required" }, 401);
+    const bearerMatch = authHeader.match(/^Bearer\s+(\S+)$/i);
+    if (!bearerMatch) return json({ error: "Authentication required" }, 401);
+    const jwt = bearerMatch[1];
 
     const authClient = createClient(url, anon, { global: { headers: { Authorization: `Bearer ${jwt}` } } });
     const { data: authData, error: authError } = await authClient.auth.getUser(jwt);
@@ -32,9 +33,16 @@ Deno.serve(async (req) => {
     const userId = authData.user.id;
 
     const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
+    const declaredLength = Number(req.headers.get("Content-Length") || "0");
+    if (declaredLength > 16_384) return json({ error: "Request body too large" }, 413);
+
     let body: Record<string, unknown>;
     try {
-      const parsed: unknown = await req.json();
+      const rawBody = await req.text();
+      if (new TextEncoder().encode(rawBody).byteLength > 16_384) {
+        return json({ error: "Request body too large" }, 413);
+      }
+      const parsed: unknown = JSON.parse(rawBody);
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
         return json({ error: "Invalid request body" }, 400);
       }
@@ -49,8 +57,10 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid move command" }, 400);
     }
     const move = rawMove as Record<string, unknown>;
-    if (!Array.isArray(move.keys) || !move.keys.every((key): key is string => typeof key === "string") ||
-        !Number.isInteger(move.dq) || !Number.isInteger(move.dr)) {
+    if (!Array.isArray(move.keys) || move.keys.length < 1 || move.keys.length > 3 ||
+        !move.keys.every((key): key is string => typeof key === "string" && key.length <= 16) ||
+        !Number.isInteger(move.dq) || !Number.isInteger(move.dr) ||
+        Math.abs(move.dq as number) > 1 || Math.abs(move.dr as number) > 1) {
       return json({ error: "Invalid move command" }, 400);
     }
     const command: MoveCommand = {

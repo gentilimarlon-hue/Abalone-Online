@@ -39,7 +39,7 @@ Deno.test("ejects a normal marble for one loss point",()=>{
 });
 Deno.test("ejecting a bomb gives two loss points and clears its marker",()=>{
  const s=state([["3,0","b"],["4,0","w"]],"b",4,{b:null,w:"4,0"});
- const r=applyAuthoritativeMove(s,{keys:["1,0"],dq:1,dr:0});
+ const r=applyAuthoritativeMove(s,{keys:["3,0"],dq:1,dr:0});
  assertEquals(r.state.lost.w,2);assertEquals(r.state.bombs.w,null);
 });
 Deno.test("pushed bomb remains marked at its new square",()=>{

@@ -58,10 +58,12 @@ main{max-width:720px;margin:auto;padding:16px 12px 28px}.screen{display:none}.sc
  <header class="top"><h1>Abalone</h1><p class="sub">Wähle deine Spielart</p></header>
  <div class="menu-options">
   <button class="btn menu-btn" id="singleplayerMode">Einzelgerät<small>Zu zweit an einem Gerät spielen</small></button>
-  <button class="btn menu-btn" id="multiplayerMode">Online 1 gegen 1<small>Mit Einladung auf zwei Geräten spielen</small></button>\n  <button class="btn menu-btn" id="leaderboardButton">Rangliste<small>Die besten Spieler nach Rating</small></button>
+  <button class="btn menu-btn" id="multiplayerMode">Online 1 gegen 1<small>Mit Einladung auf zwei Geräten spielen</small></button>
+  <button class="btn menu-btn" id="leaderboardButton">Rangliste<small>Die besten Spieler nach Rating</small></button>
  </div>
 </section>
-<section id="leaderboardScreen" class="screen"><header class="top"><h1>Rangliste</h1><p class="sub">Online-Spieler nach Rating</p></header><div class="card" id="myStatsContent" style="margin-top:14px">Deine Statistik wird geladen …</div><div class="card" id="leaderboardContent">Rangliste wird geladen …</div><button class="btn menu-back" id="leaderboardBack">Zurück</button></section>\n<section id="localMenu" class="screen">
+<section id="leaderboardScreen" class="screen"><header class="top"><h1>Rangliste</h1><p class="sub">Online-Spieler nach Rating</p></header><div class="card" id="myStatsContent" style="margin-top:14px">Deine Statistik wird geladen …</div><div class="card" id="leaderboardContent">Rangliste wird geladen …</div><button class="btn menu-back" id="leaderboardBack">Zurück</button></section>
+<section id="localMenu" class="screen">
  <header class="top"><h1>Abalone</h1><p class="sub">Einzelgerät · Spielmodus wählen</p></header>
  <div class="menu-options">
   <button class="btn menu-btn" id="standardMode">Standard<small>Klassisches Spielfeld</small></button>
@@ -430,7 +432,8 @@ document.getElementById('newGame').addEventListener('click',()=>{if(confirm('Neu
 // Hauptmenü und Spielmodi
 const loginScreen=document.getElementById('loginScreen');
 const mainMenu=document.getElementById('mainMenu');
-const leaderboardScreen=document.getElementById('leaderboardScreen');\nconst localMenu=document.getElementById('localMenu');
+const leaderboardScreen=document.getElementById('leaderboardScreen');
+const localMenu=document.getElementById('localMenu');
 const multiMenu=document.getElementById('multiMenu');
 const roomScreen=document.getElementById('roomScreen');
 const timeMenu=document.getElementById('timeMenu');
@@ -522,7 +525,8 @@ async function loadLeaderboard(){
 function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 document.getElementById('leaderboardButton').addEventListener('click',()=>{showScreen(leaderboardScreen);loadLeaderboard();});
 document.getElementById('leaderboardBack').addEventListener('click',()=>showScreen(mainMenu));
-\nfunction startGame(radius,isTimed,minutes){
+
+function startGame(radius,isTimed,minutes){
  multiplayer=false; onlineStatus='offline'; onlineRoomCode=null; onlineToken=null; onlineColor=null;
  if(pollHandle){clearInterval(pollHandle);pollHandle=null;}
  document.getElementById('gameModeNotice').textContent='Lokales Spiel: Beide Personen spielen abwechselnd an diesem Gerät.';

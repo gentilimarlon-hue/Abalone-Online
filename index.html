@@ -12,6 +12,7 @@ main{max-width:720px;margin:auto;padding:16px 12px 28px}.screen{display:none}.sc
 .card{background:#1b3732e8;border:1px solid #527168;border-radius:20px;padding:14px;margin-top:14px;box-shadow:0 14px 34px #0004,inset 0 1px 0 #ffffff12}
 .score{display:flex;gap:10px;justify-content:space-between}.player{flex:1;border-radius:14px;padding:11px;background:linear-gradient(145deg,#31554c,#223f38);border:1px solid #ffffff12;box-shadow:inset 0 1px 0 #ffffff12}.player.active{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold),0 0 14px #d5b77a25}.pname{display:flex;align-items:center;gap:7px;font-weight:700;font-size:.92rem}.dot{width:17px;height:17px;border-radius:50%;display:inline-block;border:1px solid #b9b9b9}.black{background:radial-gradient(circle at 32% 27%,#777,#171717 65%);border-color:#111}.white{background:radial-gradient(circle at 32% 27%,#fff,#ddd 75%);border-color:#aaa}.count{font-size:.8rem;color:var(--muted);margin-top:5px}.status{font-size:.95rem;line-height:1.4;min-height:42px;margin:10px 2px 0}.boardwrap{padding:2px 0 0;overflow:hidden}.board{width:100%;height:auto;display:block;touch-action:manipulation}.hole{fill:var(--cell);stroke:var(--line);stroke-width:1.5}.hole.selected{stroke:#f7d36f;stroke-width:4;filter:drop-shadow(0 0 3px #f7d36f)}.hole.group{stroke:#fff0a6;stroke-width:3}.marble{stroke:#493d2d;stroke-width:1.5}.marble.w{stroke:#a99b84;stroke-width:1.25}.marble.b{fill:url(#blackGrad)}.marble.w{fill:url(#whiteGrad)}.legal{fill:#a8d7a8;stroke:#416b4c;stroke-width:2}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.btn{border:1px solid #6d8a80;background:linear-gradient(145deg,#31554c,#24443c);color:var(--text);border-radius:11px;padding:11px 13px;font-size:.9rem;font-weight:650;cursor:pointer;flex:1;min-width:100px}.btn.primary{background:linear-gradient(145deg,#f0d79b,#c9a968);border-color:#f0d79b;color:#1c2c26;box-shadow:0 3px 0 #927746}.btn:active{transform:scale(.98)}.hint{color:var(--muted);font-size:.82rem;line-height:1.45;margin:9px 2px 0}.rules summary{cursor:pointer;font-weight:700}.rules p,.rules li{font-size:.88rem;line-height:1.5;color:var(--muted)}.rules ul{padding-left:20px}.notice{color:#f5d78e;font-size:.8rem;margin-top:6px}
 #fullscreenBtn{flex-basis:100%}.player-clock{display:none;margin-top:9px;padding-top:7px;border-top:1px solid #ffffff24;font-size:1.2rem;font-weight:850;font-variant-numeric:tabular-nums;letter-spacing:.025em;color:var(--gold)}.player-clock.visible{display:block}.player-clock.running{color:#ffe19a;text-shadow:0 0 10px #f4cf7770}.player-clock .clock-arrow{font-size:.85em;margin-right:4px}
+#multiMessage{overflow-wrap:anywhere}
 #fxOverlay{position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden;display:none;background:#07110c22}
 #fxOverlay.show{display:block}
 .fx-caption{position:absolute;top:12%;left:50%;transform:translateX(-50%);padding:8px 13px;border-radius:12px;background:#101b17e8;color:#fff3c7;font-weight:800;letter-spacing:.08em;border:2px solid #d5b77a;white-space:nowrap;text-shadow:2px 2px #000}
@@ -46,12 +47,47 @@ main{max-width:720px;margin:auto;padding:16px 12px 28px}.screen{display:none}.sc
 </head>
 <body><main>
 <section id="mainMenu" class="screen active">
- <header class="top"><h1>Abalone</h1></header>
+ <header class="top"><h1>Abalone</h1><p class="sub">Wähle deine Spielart</p></header>
+ <div class="menu-options">
+  <button class="btn menu-btn" id="singleplayerMode">Einzelgerät<small>Zu zweit an einem Gerät spielen</small></button>
+  <button class="btn menu-btn" id="multiplayerMode">Online 1 gegen 1<small>Mit Einladung auf zwei Geräten spielen</small></button>
+ </div>
+</section>
+<section id="localMenu" class="screen">
+ <header class="top"><h1>Abalone</h1><p class="sub">Einzelgerät · Spielmodus wählen</p></header>
  <div class="menu-options">
   <button class="btn menu-btn" id="standardMode">Standard<small>Klassisches Spielfeld</small></button>
   <button class="btn menu-btn" id="smallMode">Mini<small>Kleineres Spielfeld · 7 Kugeln je Seite</small></button>
   <button class="btn menu-btn" id="timedMode">Zeitspiel<small>Standardspiel mit Zeitlimit</small></button>
  </div>
+ <button class="btn menu-back" id="localBack">Zurück</button>
+</section>
+<section id="multiMenu" class="screen">
+ <header class="top"><h1>Online 1 gegen 1</h1><p class="sub">Spielmodus wählen oder Einladung öffnen</p></header>
+ <div class="menu-options">
+  <button class="btn menu-btn" id="onlineStandard">Standard<small>Online-Spiel auf dem klassischen Brett</small></button>
+  <button class="btn menu-btn" id="onlineMini">Mini<small>Online-Spiel mit 7 Kugeln je Seite</small></button>
+  <button class="btn menu-btn" disabled style="opacity:.55">Zeitspiel<small>Online-Zeitmessung folgt in einem späteren Schritt</small></button>
+ </div>
+ <div class="card">
+  <label for="roomCodeInput">Einladungscode eingeben</label>
+  <input id="roomCodeInput" maxlength="6" autocapitalize="characters" placeholder="z. B. A1B2C3" style="width:100%;margin-top:8px;padding:13px;border-radius:10px;border:1px solid #6d8a80;background:#102522;color:#fff8e9;font-size:1.05rem;text-transform:uppercase">
+  <button class="btn primary" id="joinRoomBtn" style="width:100%;margin-top:10px">Spiel beitreten</button>
+  <p class="hint" id="multiMessage">Du kannst auch einen Einladungslink öffnen; der Code wird dann automatisch übernommen.</p>
+ </div>
+ <button class="btn menu-back" id="multiBack">Zurück</button>
+</section>
+<section id="roomScreen" class="screen">
+ <header class="top"><h1>Spielraum</h1><p class="sub">Teile diesen Link mit deinem Mitspieler</p></header>
+ <div class="card">
+  <div style="text-align:center">
+   <div class="eyebrow">Einladungscode</div>
+   <div id="roomCodeDisplay" style="font-size:2rem;font-weight:850;letter-spacing:.16em;margin:8px 0">------</div>
+   <button class="btn primary" id="copyInviteBtn">Einladungslink kopieren</button>
+   <p id="roomWaitText" class="hint">Warte auf den zweiten Spieler …</p>
+  </div>
+ </div>
+ <button class="btn menu-back" id="roomBack">Zurück zum Menü</button>
 </section>
 <section id="timeMenu" class="screen">
  <header class="top"><h1>Abalone</h1><p class="sub">Zeitspiel · Spielzeit wählen</p></header>
@@ -73,7 +109,8 @@ main{max-width:720px;margin:auto;padding:16px 12px 28px}.screen{display:none}.sc
  <div class="boardwrap"><svg id="board" class="board" viewBox="86 76 188 168" role="img" aria-label="Abalone-Spielbrett"></svg></div>
  <div class="controls"><button class="btn" id="clear">Auswahl aufheben</button><button class="btn primary" id="newGame">Neues Spiel</button><button class="btn" id="backMenu">Menü</button></div>
  <div class="hint" id="hint">Ziehen: Wähle 1–3 benachbarte eigene Kugeln in einer Linie und tippe dann auf ein benachbartes Zielfeld. Zum Schieben muss die eigene Gruppe zahlenmäßig überlegen sein.</div>
- <div class="notice">Lokales Spiel: Beide Personen spielen abwechselnd auf diesem Handy. Im Vollbild: zwei Finger auseinanderziehen zum Zoomen, drehen zum Rotieren.</div>
+ <div class="notice" id="gameModeNotice">Lokales Spiel: Beide Personen spielen abwechselnd auf diesem Handy.</div>
+ <div class="notice" id="onlineRoomInfo" style="display:none"></div>
 </section>
 <section class="card rules"><details><summary>Regeln kurz erklärt</summary><ul>
 <li>Jeder startet mit 14 Kugeln. Wer zuerst 6 Verlustpunkte verursacht, gewinnt. Eine Bombe zählt beim Herausschieben 2 Punkte.</li><li>Jede Seite hat eine zufällig markierte Bombe (rotes X). Wird sie herausgeschoben, explodiert sie und entfernt Kugeln auf den benachbarten Feldern; jede zusätzlich zerstörte Kugel zählt 1 Verlustpunkt.</li>
@@ -88,6 +125,10 @@ main{max-width:720px;margin:auto;padding:16px 12px 28px}.screen{display:none}.sc
 (() => {
 const svg=document.getElementById('board'), status=document.getElementById('status'), hint=document.getElementById('hint');
 let boardRadius=4,timed=false,timeLeft={b:0,w:0},timerHandle=null,timerStarted=false,timeLimitSeconds=0;
+let multiplayer=false, onlineRoomCode=null, onlineToken=null, onlineColor=null, onlineStatus='offline';
+let pollHandle=null, lastRemoteUpdatedAt=null, onlineBusy=false;
+const SUPABASE_URL='https://mduejbovvxpdvziqyoea.supabase.co';
+const SUPABASE_KEY='sb_publishable_D2hDu69XXNM0kEt2V8ocqQ_21ZK5lGI';
 const cells=[], map=new Map(); let pieces=new Map(), turn='b', selected=[], lost={b:0,w:0}, gameOver=false, bombs={b:null,w:null};
 const dirs=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
 const key=(q,r)=>q+','+r;
@@ -203,6 +244,10 @@ function lineForMove(baseKeys,dq,dr){
 }
 function tap(k){
  if(gameOver)return;
+ if(multiplayer && (onlineStatus!=='playing' || turn!==onlineColor || onlineBusy)){
+   status.textContent = onlineStatus==='waiting' ? 'Warte noch auf den zweiten Spieler.' : (turn!==onlineColor ? 'Der andere Spieler ist am Zug.' : 'Synchronisiere …');
+   return;
+ }
  // A player can tap the opposing marble being pushed, or the empty field
  // beyond it. Try all six directions, inferring a whole own line if needed.
  if(selected.length){
@@ -300,7 +345,7 @@ function checkWinner(){
  if(lost.w>=winningThreshold)return 'b';
  return null;
 }
-function applyMove(mv){
+async function applyMove(mv){
  startTimer();
  const oldPieces=new Map(pieces);
  const oldBombs={...bombs};
@@ -347,6 +392,7 @@ function applyMove(mv){
  if(winner)showWinAnimation(winner);
   else if(bombKnocked)showBombExplosion();
   else if(knockedOff.length)showKnockoutAnimation('normal');
+ if(multiplayer) await sendOnlineState(winner);
 }
 function updateUI(){
  document.getElementById('pBlack').classList.toggle('active',turn==='b'&&!gameOver);
@@ -360,28 +406,149 @@ document.getElementById('clear').addEventListener('click',()=>{selected=[];draw(
 document.getElementById('newGame').addEventListener('click',()=>{if(confirm('Neues Spiel starten? Der aktuelle Spielstand geht verloren.'))init(boardRadius,timed,timeLimitSeconds/60)});
 // Hauptmenü und Spielmodi
 const mainMenu=document.getElementById('mainMenu');
+const localMenu=document.getElementById('localMenu');
+const multiMenu=document.getElementById('multiMenu');
+const roomScreen=document.getElementById('roomScreen');
 const timeMenu=document.getElementById('timeMenu');
 const gameScreen=document.getElementById('gameScreen');
 function showScreen(screen){
- [mainMenu,timeMenu,gameScreen].forEach(el=>el.classList.remove('active'));
+ [mainMenu,localMenu,multiMenu,roomScreen,timeMenu,gameScreen].forEach(el=>el.classList.remove('active'));
  screen.classList.add('active');
  document.body.classList.remove('fullscreen-mode');
 }
 function startGame(radius,isTimed,minutes){
+ multiplayer=false; onlineStatus='offline'; onlineRoomCode=null; onlineToken=null; onlineColor=null;
+ if(pollHandle){clearInterval(pollHandle);pollHandle=null;}
+ document.getElementById('gameModeNotice').textContent='Lokales Spiel: Beide Personen spielen abwechselnd an diesem Gerät.';
+ document.getElementById('onlineRoomInfo').style.display='none';
  showScreen(gameScreen);
  init(radius,isTimed,minutes);
 }
+document.getElementById('singleplayerMode').addEventListener('click',()=>showScreen(localMenu));
+document.getElementById('multiplayerMode').addEventListener('click',()=>{
+ showScreen(multiMenu);
+ const fromUrl=new URLSearchParams(location.search).get('room');
+ if(fromUrl) document.getElementById('roomCodeInput').value=fromUrl.toUpperCase();
+});
+document.getElementById('localBack').addEventListener('click',()=>showScreen(mainMenu));
+document.getElementById('multiBack').addEventListener('click',()=>showScreen(mainMenu));
 document.getElementById('standardMode').addEventListener('click',()=>startGame(4,false,0));
 document.getElementById('smallMode').addEventListener('click',()=>startGame(3,false,0));
 document.getElementById('timedMode').addEventListener('click',()=>showScreen(timeMenu));
-document.getElementById('timeBack').addEventListener('click',()=>showScreen(mainMenu));
+document.getElementById('timeBack').addEventListener('click',()=>showScreen(localMenu));
 document.querySelectorAll('.time-choice').forEach(button=>{
  button.addEventListener('click',()=>startGame(4,true,Number(button.dataset.minutes)));
 });
 document.getElementById('backMenu').addEventListener('click',()=>{
  if(timerHandle){clearInterval(timerHandle);timerHandle=null;}
+ if(pollHandle){clearInterval(pollHandle);pollHandle=null;}
+ multiplayer=false; onlineStatus='offline';
  showScreen(mainMenu);
 });
+
+function serializeState(){
+ return {radius:boardRadius,pieces:[...pieces.entries()],turn,lost,bombs,gameOver,timed:false};
+}
+function restoreState(s){
+ if(!s || !Array.isArray(s.pieces)) throw new Error('Ungültiger Spielstand vom Server.');
+ if(timerHandle){clearInterval(timerHandle);timerHandle=null;}
+ timed=false;timerStarted=false;timeLimitSeconds=0;timeLeft={b:0,w:0};
+ buildBoard(Number(s.radius)===3?3:4);
+ pieces=new Map(s.pieces); turn=s.turn==='w'?'w':'b';
+ lost={b:Number(s.lost?.b)||0,w:Number(s.lost?.w)||0};
+ bombs={b:s.bombs?.b||null,w:s.bombs?.w||null};
+ gameOver=!!s.gameOver;selected=[];
+ draw();updateUI();
+}
+async function rpc(name,args){
+ const response=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+name,{
+  method:'POST',
+  headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},
+  body:JSON.stringify(args)
+ });
+ const body=await response.text();
+ let data;try{data=body?JSON.parse(body):null}catch{data=body}
+ if(!response.ok) throw new Error(data?.message||data?.hint||data?.details||('Supabase-Fehler '+response.status));
+ return data;
+}
+function setOnlineNotice(text){
+ const el=document.getElementById('onlineRoomInfo');
+ el.style.display='block';el.textContent=text;
+}
+async function createOnlineRoom(radius){
+ try{
+  multiplayer=true;onlineStatus='waiting';onlineColor='b';
+  showScreen(gameScreen);init(radius,false,0);
+  const result=await rpc('abalone_create_room',{p_mode:radius===3?'mini':'standard',p_minutes:null,p_initial_state:serializeState()});
+  onlineRoomCode=result.room_code;onlineToken=result.player_token;onlineColor=result.player_color||'b';
+  const invite=new URL(location.href);invite.search='?room='+encodeURIComponent(onlineRoomCode);invite.hash='';
+  document.getElementById('roomCodeDisplay').textContent=onlineRoomCode;
+  document.getElementById('roomWaitText').textContent='Raum erstellt. Teile den Link; das Spiel beginnt, sobald dein Mitspieler beitritt.';
+  document.getElementById('copyInviteBtn').onclick=()=>copyText(invite.toString());
+  showScreen(roomScreen);
+  document.getElementById('gameModeNotice').textContent='Online-Spiel · Schwarz';
+  setOnlineNotice('Raum '+onlineRoomCode+' · Du spielst Schwarz.');
+  startPolling();
+ }catch(e){multiplayer=false;onlineStatus='offline';showScreen(multiMenu);document.getElementById('multiMessage').textContent='Fehler beim Erstellen: '+e.message;}
+}
+async function joinOnlineRoom(code){
+ try{
+  code=(code||'').trim().toUpperCase();
+  if(!/^[A-F0-9]{6}$/.test(code)) throw new Error('Bitte einen gültigen sechsstelligen Einladungscode eingeben.');
+  const result=await rpc('abalone_join_room',{p_room_code:code});
+  multiplayer=true;onlineRoomCode=result.room_code;onlineToken=result.player_token;onlineColor=result.player_color||'w';onlineStatus='playing';
+  restoreState(result.state);
+  showScreen(gameScreen);
+  document.getElementById('gameModeNotice').textContent='Online-Spiel · Weiß';
+  setOnlineNotice('Raum '+onlineRoomCode+' · Du spielst Weiß.');
+  lastRemoteUpdatedAt=null;startPolling();
+ }catch(e){document.getElementById('multiMessage').textContent='Beitritt nicht möglich: '+e.message;}
+}
+async function copyText(value){
+ try{await navigator.clipboard.writeText(value);document.getElementById('roomWaitText').textContent='Einladungslink kopiert. Du kannst ihn jetzt verschicken.';}
+ catch{prompt('Kopiere diesen Einladungslink:',value);}
+}
+async function sendOnlineState(winner){
+ if(!multiplayer||!onlineRoomCode||!onlineToken)return;
+ onlineBusy=true;
+ try{
+  await rpc('abalone_submit_state',{
+   p_room_code:onlineRoomCode,p_player_token:onlineToken,p_state:serializeState(),
+   p_next_turn:turn,p_winner:winner||null
+  });
+  const latest=await rpc('abalone_get_room',{p_room_code:onlineRoomCode,p_player_token:onlineToken});
+  lastRemoteUpdatedAt=latest.updated_at;
+ }catch(e){
+  status.textContent='Synchronisierung fehlgeschlagen: '+e.message+' · Bitte nicht weiterspielen und Verbindung prüfen.';
+ }finally{onlineBusy=false;}
+}
+async function pollOnlineRoom(){
+ if(!multiplayer||!onlineRoomCode||!onlineToken)return;
+ try{
+  const remote=await rpc('abalone_get_room',{p_room_code:onlineRoomCode,p_player_token:onlineToken});
+  if(remote.status==='playing' && onlineStatus==='waiting'){
+   onlineStatus='playing';showScreen(gameScreen);
+   document.getElementById('roomWaitText').textContent='Mitspieler ist beigetreten.';
+   status.textContent='Mitspieler ist da. Schwarz beginnt.';
+  }
+  if(remote.updated_at && remote.updated_at!==lastRemoteUpdatedAt){
+   if(lastRemoteUpdatedAt!==null && remote.state) restoreState(remote.state);
+   lastRemoteUpdatedAt=remote.updated_at;
+  }
+  if(remote.status==='finished' && remote.winner){gameOver=true;updateUI();}
+ }catch(e){status.textContent='Verbindung wird wiederhergestellt …';}
+}
+function startPolling(){
+ if(pollHandle)clearInterval(pollHandle);
+ pollOnlineRoom();
+ pollHandle=setInterval(pollOnlineRoom,1800);
+}
+document.getElementById('onlineStandard').addEventListener('click',()=>createOnlineRoom(4));
+document.getElementById('onlineMini').addEventListener('click',()=>createOnlineRoom(3));
+document.getElementById('joinRoomBtn').addEventListener('click',()=>joinOnlineRoom(document.getElementById('roomCodeInput').value));
+const initialInvite=new URLSearchParams(location.search).get('room');
+if(initialInvite){showScreen(multiMenu);document.getElementById('roomCodeInput').value=initialInvite.toUpperCase();}
+
 // Kein Spiel wird vor der Auswahl automatisch gestartet.
 })();
 </script></body></html>

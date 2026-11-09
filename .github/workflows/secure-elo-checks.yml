@@ -25,7 +25,7 @@ jobs:
           from pathlib import Path
           sql = Path("supabase/players.sql").read_text(encoding="utf-8")
           grants = re.findall(
-              r"grant\\s+execute\\s+on\\s+function\\s+public\\.abalone_(?:register_player|get_player)",
+              r"grant\s+execute\s+on\s+function\s+public\.abalone_(?:register_player|get_player)",
               sql,
               re.IGNORECASE,
           )

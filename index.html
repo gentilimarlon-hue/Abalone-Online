@@ -421,8 +421,10 @@ function updatePlayerLabels(){
  }
  const mine=currentPlayer?currentPlayer.username:'Gast';
  const myRating=currentPlayer?currentPlayer.rating+' Punkte':'ohne Wertung';
- if(onlineColor==='b'){bName.textContent=mine;wName.textContent='Mitspieler';bRating.textContent=myRating;wRating.textContent='';}
- else{wName.textContent=mine;bName.textContent='Mitspieler';wRating.textContent=myRating;bRating.textContent='';}
+ const opponentName=onlineOpponent?.username||'Mitspieler';
+ const opponentRating=onlineOpponent?.rating!=null?onlineOpponent.rating+' Punkte':'';
+ if(onlineColor==='b'){bName.textContent=mine;wName.textContent=opponentName;bRating.textContent=myRating;wRating.textContent=opponentRating;}
+ else{wName.textContent=mine;bName.textContent=opponentName;wRating.textContent=myRating;bRating.textContent=opponentRating;}
 }
 function updateUI(){
  updatePlayerLabels();
@@ -451,6 +453,7 @@ function showScreen(screen){
 }
 
 let currentPlayer=null, isGuest=true, pendingInvite=null;
+let onlineOpponent=null;
 const DEVICE_KEY='abalone_device_token_v1';
 function renderProfile(){
  const pill=document.getElementById('profilePill');
@@ -660,6 +663,7 @@ async function joinOnlineRoom(code){
   if(!/^[A-F0-9]{6}$/.test(code)) throw new Error('Bitte einen gültigen sechsstelligen Einladungscode eingeben.');
   const result=await rpc('abalone_join_room',{p_room_code:code});
   multiplayer=true;onlineRoomCode=result.room_code;onlineToken=result.player_token;onlineColor=result.player_color||'w';onlineStatus='playing';
+  onlineOpponent=null;
   restoreState(result.state);
   showScreen(gameScreen);
   document.getElementById('gameModeNotice').textContent='Online-Spiel · Weiß';
@@ -745,6 +749,7 @@ async function pollOnlineRoom(){
  if(!multiplayer||!onlineRoomCode||!onlineToken)return;
  try{
   const remote=await rpc('abalone_get_room',{p_room_code:onlineRoomCode,p_player_token:onlineToken});
+  onlineOpponent=remote.opponent||null;updatePlayerLabels();
   if(remote.status==='playing' && onlineStatus==='waiting'){
    onlineStatus='playing';showScreen(gameScreen);
    document.getElementById('roomWaitText').textContent='Mitspieler ist beigetreten.';

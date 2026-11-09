@@ -83,7 +83,10 @@ main{max-width:720px;margin:auto;padding:16px 12px 28px}.screen{display:none}.sc
   <div style="text-align:center">
    <div class="eyebrow">Einladungscode</div>
    <div id="roomCodeDisplay" style="font-size:2rem;font-weight:850;letter-spacing:.16em;margin:8px 0">------</div>
-   <button class="btn primary" id="copyInviteBtn">Einladungslink kopieren</button>
+   <button class="btn primary" id="copyCodeBtn" type="button">Code kopieren</button>
+   <div class="eyebrow" style="margin-top:18px">Einladungslink</div>
+   <input id="inviteLinkDisplay" readonly aria-label="Einladungslink" style="width:100%;margin:8px 0;padding:11px;border-radius:10px;border:1px solid #6d8a80;background:#102522;color:#fff8e9;font-size:.88rem">
+   <button class="btn primary" id="copyInviteBtn" type="button">Einladungslink kopieren</button>
    <p id="roomWaitText" class="hint">Warte auf den zweiten Spieler …</p>
   </div>
  </div>
@@ -482,9 +485,12 @@ async function createOnlineRoom(radius){
   const result=await rpc('abalone_create_room',{p_mode:radius===3?'mini':'standard',p_minutes:null,p_initial_state:serializeState()});
   onlineRoomCode=result.room_code;onlineToken=result.player_token;onlineColor=result.player_color||'b';
   const invite=new URL(location.href);invite.search='?room='+encodeURIComponent(onlineRoomCode);invite.hash='';
+  const inviteUrl=invite.toString();
   document.getElementById('roomCodeDisplay').textContent=onlineRoomCode;
-  document.getElementById('roomWaitText').textContent='Raum erstellt. Teile den Link; das Spiel beginnt, sobald dein Mitspieler beitritt.';
-  document.getElementById('copyInviteBtn').onclick=()=>copyText(invite.toString());
+  document.getElementById('inviteLinkDisplay').value=inviteUrl;
+  document.getElementById('roomWaitText').textContent='Raum erstellt. Teile den Link; dein Mitspieler wird beim Öffnen automatisch in den Raum geleitet.';
+  document.getElementById('copyCodeBtn').onclick=()=>copyText(onlineRoomCode,'Code');
+  document.getElementById('copyInviteBtn').onclick=()=>copyText(inviteUrl,'Einladungslink');
   showScreen(roomScreen);
   document.getElementById('gameModeNotice').textContent='Online-Spiel · Schwarz';
   setOnlineNotice('Raum '+onlineRoomCode+' · Du spielst Schwarz.');
@@ -504,9 +510,27 @@ async function joinOnlineRoom(code){
   lastRemoteUpdatedAt=null;startPolling();
  }catch(e){document.getElementById('multiMessage').textContent='Beitritt nicht möglich: '+e.message;}
 }
-async function copyText(value){
- try{await navigator.clipboard.writeText(value);document.getElementById('roomWaitText').textContent='Einladungslink kopiert. Du kannst ihn jetzt verschicken.';}
- catch{prompt('Kopiere diesen Einladungslink:',value);}
+async function copyText(value,label='Text'){
+ const feedback=document.getElementById('roomWaitText');
+ try{
+  if(navigator.clipboard && window.isSecureContext){
+   await navigator.clipboard.writeText(value);
+  }else{
+   const field=document.createElement('textarea');
+   field.value=value;field.setAttribute('readonly','');
+   field.style.position='fixed';field.style.opacity='0';field.style.left='-9999px';
+   document.body.appendChild(field);field.select();field.setSelectionRange(0,field.value.length);
+   const copied=document.execCommand('copy');field.remove();
+   if(!copied) throw new Error('Kopieren durch den Browser blockiert');
+  }
+  feedback.textContent=label+' wurde kopiert. Du kannst ihn jetzt verschicken.';
+ }catch(e){
+  const field=document.createElement('textarea');field.value=value;
+  field.style.position='fixed';field.style.left='8px';field.style.right='8px';field.style.bottom='16px';
+  field.style.zIndex='10000';field.style.padding='12px';field.style.fontSize='16px';
+  document.body.appendChild(field);field.focus();field.select();
+  feedback.textContent='Automatisches Kopieren blockiert. Der Text ist markiert – bitte „Kopieren“ wählen.';
+ }
 }
 async function sendOnlineState(winner){
  if(!multiplayer||!onlineRoomCode||!onlineToken)return;
@@ -547,7 +571,34 @@ document.getElementById('onlineStandard').addEventListener('click',()=>createOnl
 document.getElementById('onlineMini').addEventListener('click',()=>createOnlineRoom(3));
 document.getElementById('joinRoomBtn').addEventListener('click',()=>joinOnlineRoom(document.getElementById('roomCodeInput').value));
 const initialInvite=new URLSearchParams(location.search).get('room');
-if(initialInvite){showScreen(multiMenu);document.getElementById('roomCodeInput').value=initialInvite.toUpperCase();}
+if(initialInvite){
+ showScreen(multiMenu);
+ document.getElementById('roomCodeInput').value=initialInvite.toUpperCase();
+ // Einladungslinks leiten direkt zum Beitritt; bei Fehler bleibt der Code im Eingabefeld.
+ setTimeout(()=>joinOnlineRoom(initialInvite),350);
+}
+
+// Versionsprüfung: Pages liefert neue index.html/version.json; bei laufendem Match
+// wird ein Reload bis zum Ende aufgeschoben, damit kein Spielzug verloren geht.
+const APP_VERSION='20.1.0';
+let updatePending=false;
+async function checkAppVersion(){
+ try{
+  const response=await fetch('./version.json?check='+Date.now(),{cache:'no-store'});
+  if(!response.ok)return;
+  const remote=await response.json();
+  if(remote.version && remote.version!==APP_VERSION){
+   if(multiplayer && onlineStatus==='playing'){
+    updatePending=true;
+    status.textContent='Eine Aktualisierung ist verfügbar. Nach dem Spiel wird automatisch aktualisiert.';
+   }else{
+    location.reload();
+   }
+  }
+ }catch(e){}
+}
+checkAppVersion();
+setInterval(checkAppVersion,60000);
 
 // Kein Spiel wird vor der Auswahl automatisch gestartet.
 })();

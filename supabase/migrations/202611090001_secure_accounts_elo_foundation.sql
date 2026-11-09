@@ -41,7 +41,7 @@ alter table public.game_rooms
   alter column last_move_at set default now(),
   alter column last_move_at set not null;
 
-do $
+do $$
 begin
   if not exists (
     select 1 from pg_constraint

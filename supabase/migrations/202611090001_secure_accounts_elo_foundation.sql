@@ -27,7 +27,32 @@ create unique index if not exists players_auth_user_id_uidx
 
 alter table public.game_rooms
   add column if not exists host_player_id uuid references public.players(id),
-  add column if not exists guest_player_id uuid references public.players(id);
+  add column if not exists guest_player_id uuid references public.players(id),
+  add column if not exists winner text,
+  add column if not exists last_move_at timestamptz;
+
+-- These fields are used by the server-side commit and room-join functions.
+-- Backfill existing rooms before making last_move_at mandatory.
+update public.game_rooms
+set last_move_at = coalesce(last_move_at, updated_at, created_at, now())
+where last_move_at is null;
+
+alter table public.game_rooms
+  alter column last_move_at set default now(),
+  alter column last_move_at set not null;
+
+do $
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid='public.game_rooms'::regclass
+      and conname='game_rooms_winner_check'
+  ) then
+    alter table public.game_rooms
+      add constraint game_rooms_winner_check
+      check (winner is null or winner in ('b','w'));
+  end if;
+end $;
 
 create table if not exists public.rated_matches (
   id uuid primary key default gen_random_uuid(),

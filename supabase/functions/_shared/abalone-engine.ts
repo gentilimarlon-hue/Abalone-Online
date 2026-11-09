@@ -77,8 +77,10 @@ export function applyAuthoritativeMove(input: SerializedState, command: MoveComm
     if(!victim)throw new Error("Invalid push state");
     const isBomb=oldBombs[victim]===op;
     pieces.delete(op);
-    if(inside(q+dq,r+dr,radius))pieces.set(dest,victim);
-    else {
+    if(inside(q+dq,r+dr,radius)){
+      pieces.set(dest,victim);
+      if(isBomb)bombs[victim]=dest;
+    } else {
       lost[victim]+=isBomb?2:1;
       ejected.push({color:victim,bomb:isBomb});
       if(isBomb)bombs[victim]=null;

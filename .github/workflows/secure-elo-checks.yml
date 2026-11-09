@@ -7,6 +7,18 @@ on:
 jobs:
   deno-tests:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
@@ -58,6 +70,11 @@ jobs:
               raise SystemExit("Foundation migration must normalize the pgcrypto schema")
           print("Migration delimiter and prerequisite guards passed")
           PY
+      - name: Run PostgreSQL migration and Elo integration tests
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/tests/secure-elo-integration.sql
       - name: Check browser JavaScript syntax
         run: |
           python - <<'PY'

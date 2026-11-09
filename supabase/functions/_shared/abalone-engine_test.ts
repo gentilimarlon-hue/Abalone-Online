@@ -54,7 +54,7 @@ Deno.test("mini board declares winner at three loss points",()=>{
 });
 Deno.test("standard board declares winner at six loss points",()=>{
  const s=state([["2,0","b"],["3,0","b"],["4,0","w"]],"b",4,{b:null,w:"4,0"},{b:0,w:4});
- const r=applyAuthoritativeMove(s,{keys:["3,0"],dq:1,dr:0});
+ const r=applyAuthoritativeMove(s,{keys:["2,0","3,0"],dq:1,dr:0});
  assertEquals(r.winner,"b");assertEquals(r.state.lost.w,6);
 });
 Deno.test("does not mutate the input state",()=>{

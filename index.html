@@ -145,7 +145,7 @@ main{max-width:720px;margin:auto;padding:16px 12px 28px}.screen{display:none}.sc
 const svg=document.getElementById('board'), status=document.getElementById('status'), hint=document.getElementById('hint');
 let boardRadius=4,timed=false,timeLeft={b:0,w:0},timerHandle=null,timerStarted=false,timeLimitSeconds=0;
 let multiplayer=false, onlineRoomCode=null, onlineToken=null, onlineColor=null, onlineStatus='offline';
-let pollHandle=null, lastRemoteUpdatedAt=null, onlineBusy=false;
+let pollHandle=null, lastRemoteUpdatedAt=null, onlineBusy=false, ratingRefreshForFinishedRoom=false;
 const SUPABASE_URL='https://mduejbovvxpdvziqyoea.supabase.co';
 const SUPABASE_KEY='sb_publishable_D2hDu69XXNM0kEt2V8ocqQ_21ZK5lGI';
 const cells=[], map=new Map(); let pieces=new Map(), turn='b', selected=[], lost={b:0,w:0}, gameOver=false, bombs={b:null,w:null};
@@ -658,7 +658,7 @@ function setOnlineNotice(text){
 async function createOnlineRoom(radius){
  try{
   if(!currentPlayer||!authSession?.access_token)throw new Error('Für Online-Partien mit Elo-Wertung musst du dich mit deinem Account anmelden.');
-  multiplayer=true;onlineStatus='waiting';onlineColor='b';
+  multiplayer=true;onlineStatus='waiting';onlineColor='b';ratingRefreshForFinishedRoom=false;lastRemoteUpdatedAt=null;
   showScreen(gameScreen);init(radius,false,0);
   const result=await rpc('abalone_create_room',{p_mode:radius===3?'mini':'standard',p_minutes:null,p_initial_state:serializeState()});
   onlineRoomCode=result.room_code;onlineToken=result.player_token;onlineColor=result.player_color||'b';
@@ -682,7 +682,7 @@ async function joinOnlineRoom(code){
   code=(code||'').trim().toUpperCase();
   if(!/^[A-F0-9]{6}$/.test(code)) throw new Error('Bitte einen gültigen sechsstelligen Einladungscode eingeben.');
   const result=await rpc('abalone_join_room',{p_room_code:code});
-  multiplayer=true;onlineRoomCode=result.room_code;onlineToken=result.player_token;onlineColor=result.player_color||'w';onlineStatus='playing';
+  multiplayer=true;onlineRoomCode=result.room_code;onlineToken=result.player_token;onlineColor=result.player_color||'w';onlineStatus='playing';ratingRefreshForFinishedRoom=false;
   onlineOpponent=null;
   restoreState(result.state);
   showScreen(gameScreen);
@@ -753,7 +753,7 @@ async function sendOnlineMove(mv){
 }
 
 async function pollOnlineRoom(){
- if(!multiplayer||!onlineRoomCode||!onlineToken)return;
+ if(!multiplayer||!onlineRoomCode||!onlineToken||onlineBusy)return;
  try{
   const remote=await rpc('abalone_get_room',{p_room_code:onlineRoomCode,p_player_token:onlineToken});
   onlineOpponent=remote.opponent||null;updatePlayerLabels();
@@ -768,6 +768,14 @@ async function pollOnlineRoom(){
   }
   if(remote.status==='finished' && remote.winner){
    gameOver=true;updateUI();
+   status.textContent=(remote.winner==='b'?'Schwarz':'Weiß')+' gewinnt!';
+   if(!ratingRefreshForFinishedRoom){
+    ratingRefreshForFinishedRoom=true;
+    if(currentPlayer){
+     try{await loadAuthenticatedProfile();status.textContent+=' Dein aktuelles Rating: '+currentPlayer.rating+'.';}
+     catch(e){console.warn('Rating nach Spielende konnte nicht aktualisiert werden:',e);}
+    }
+   }
    if(updatePending) setTimeout(()=>location.reload(),5000);
   }
  }catch(e){status.textContent='Verbindung wird wiederhergestellt …';}

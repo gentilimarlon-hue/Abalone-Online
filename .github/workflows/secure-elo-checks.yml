@@ -18,6 +18,20 @@ jobs:
         run: deno test --allow-net supabase/functions/_shared/abalone-engine_test.ts
       - name: Check Edge Function syntax
         run: deno check supabase/functions/abalone-move/index.ts
+      - name: Ensure legacy passwordless APIs stay revoked
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          sql = Path("supabase/players.sql").read_text(encoding="utf-8")
+          grants = re.findall(
+              r"grant\\s+execute\\s+on\\s+function\\s+public\\.abalone_(?:register_player|get_player)",
+              sql,
+              re.IGNORECASE,
+          )
+          if grants:
+              raise SystemExit("Legacy passwordless player API grants must remain disabled")
+          PY
       - name: Check browser JavaScript syntax
         run: |
           python - <<'PY'

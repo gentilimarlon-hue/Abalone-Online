@@ -542,6 +542,7 @@ async function sendOnlineState(winner){
   });
   const latest=await rpc('abalone_get_room',{p_room_code:onlineRoomCode,p_player_token:onlineToken});
   lastRemoteUpdatedAt=latest.updated_at;
+  if(winner && updatePending) setTimeout(()=>location.reload(),5000);
  }catch(e){
   status.textContent='Synchronisierung fehlgeschlagen: '+e.message+' · Bitte nicht weiterspielen und Verbindung prüfen.';
  }finally{onlineBusy=false;}
@@ -559,7 +560,10 @@ async function pollOnlineRoom(){
    if(lastRemoteUpdatedAt!==null && remote.state) restoreState(remote.state);
    lastRemoteUpdatedAt=remote.updated_at;
   }
-  if(remote.status==='finished' && remote.winner){gameOver=true;updateUI();}
+  if(remote.status==='finished' && remote.winner){
+   gameOver=true;updateUI();
+   if(updatePending) setTimeout(()=>location.reload(),5000);
+  }
  }catch(e){status.textContent='Verbindung wird wiederhergestellt …';}
 }
 function startPolling(){

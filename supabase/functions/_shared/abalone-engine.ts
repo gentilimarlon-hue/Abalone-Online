@@ -48,10 +48,11 @@ export function applyAuthoritativeMove(input: SerializedState, command: MoveComm
     if(sorted.every((p,i)=>i===0||(p[0]-sorted[i-1][0]===aq&&p[1]-sorted[i-1][1]===ar))){axis=[aq,ar];break;}
   }
   if(keys.length>1&&!axis)throw new Error("Selected marbles must form a straight line");
-  const inline=keys.length===1 || !!axis && ((Math.abs(dq)===Math.abs(axis[0])&&Math.abs(dr)===Math.abs(axis[1])) || (dq===axis[0]&&dr===axis[1]) || (dq===-axis[0]&&dr===-axis[1]));
-  if(!inline && keys.length<2)throw new Error("Invalid sidestep");
-  if(!inline && axis && ((dq===axis[0]&&dr===axis[1])||(dq===-axis[0]&&dr===-axis[1])))throw new Error("Invalid sidestep");
-  if(inline && keys.length>1 && axis && !((dq===axis[0]&&dr===axis[1])||(dq===-axis[0]&&dr===-axis[1])))throw new Error("Invalid inline direction");
+  const parallel=!!axis && ((dq===axis[0]&&dr===axis[1])||(dq===-axis[0]&&dr===-axis[1]));
+  const inline=keys.length===1 || parallel;
+  if(keys.length>1 && !axis)throw new Error("Invalid group");
+  // A multi-marble group may move sideways only perpendicular to its own axis.
+  if(!inline && axis && (dq===axis[0]&&dr===axis[1] || dq===-axis[0]&&dr===-axis[1]))throw new Error("Invalid sidestep");
   const ordered=[...arr].sort((a,b)=>(b[0]*dq+b[1]*dr)-(a[0]*dq+a[1]*dr));
   const front=ordered[0];
   const opponents:string[]=[];

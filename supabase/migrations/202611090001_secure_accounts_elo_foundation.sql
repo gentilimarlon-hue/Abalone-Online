@@ -132,7 +132,6 @@ declare
   v_black_found boolean := false;
   v_white_found boolean := false;
   v_expected_black numeric;
-  v_expected_white numeric;
   v_black_change integer;
   v_white_change integer;
   v_match public.rated_matches%rowtype;
@@ -166,9 +165,16 @@ begin
   if not v_black_found or not v_white_found then raise exception 'Spielerprofil fehlt'; end if;
 
   v_expected_black := 1.0/(1.0+power(10.0,(v_white.rating-v_black.rating)/400.0));
-  v_expected_white := 1.0-v_expected_black;
   v_black_change := round(32.0*((case when p_winner_color='b' then 1.0 else 0.0 end)-v_expected_black));
   v_white_change := -v_black_change;
+  -- Keep ratings non-negative without breaking the zero-sum invariant.
+  if v_black.rating + v_black_change < 0 then
+    v_black_change := -v_black.rating;
+    v_white_change := -v_black_change;
+  elsif v_white.rating + v_white_change < 0 then
+    v_white_change := -v_white.rating;
+    v_black_change := -v_white_change;
+  end if;
 
   insert into public.rated_matches(
     room_id,black_player_id,white_player_id,winner_color,
@@ -177,8 +183,8 @@ begin
   ) values (
     p_room_id,p_black_player_id,p_white_player_id,p_winner_color,
     v_black.rating,v_white.rating,v_black_change,v_white_change,
-    greatest(0,v_black.rating+v_black_change),
-    greatest(0,v_white.rating+v_white_change)
+    v_black.rating+v_black_change,
+    v_white.rating+v_white_change
   ) returning * into v_match;
 
   update public.players

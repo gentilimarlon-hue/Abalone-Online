@@ -129,6 +129,8 @@ as $$
 declare
   v_black public.players%rowtype;
   v_white public.players%rowtype;
+  v_black_found boolean := false;
+  v_white_found boolean := false;
   v_expected_black numeric;
   v_expected_white numeric;
   v_black_change integer;
@@ -158,8 +160,10 @@ begin
   end if;
 
   select * into v_black from public.players where id=p_black_player_id for update;
+  v_black_found := found;
   select * into v_white from public.players where id=p_white_player_id for update;
-  if not found then raise exception 'Spielerprofil fehlt'; end if;
+  v_white_found := found;
+  if not v_black_found or not v_white_found then raise exception 'Spielerprofil fehlt'; end if;
 
   v_expected_black := 1.0/(1.0+power(10.0,(v_white.rating-v_black.rating)/400.0));
   v_expected_white := 1.0-v_expected_black;

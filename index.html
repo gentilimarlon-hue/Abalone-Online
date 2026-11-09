@@ -411,7 +411,7 @@ async function applyMove(mv){
  if(winner)showWinAnimation(winner);
   else if(bombKnocked)showBombExplosion();
   else if(knockedOff.length)showKnockoutAnimation('normal');
- if(multiplayer) await sendOnlineState(winner);
+ if(multiplayer) await sendOnlineMove(mv);
 }
 function updatePlayerLabels(){
  const bName=document.getElementById('blackPlayerName'),wName=document.getElementById('whitePlayerName');
@@ -691,6 +691,40 @@ async function copyText(value,label='Text'){
   document.body.appendChild(field);field.focus();field.select();
   feedback.textContent='Automatisches Kopieren blockiert. Der Text ist markiert – bitte „Kopieren“ wählen.';
  }
+}
+async function sendOnlineMove(mv){
+ if(!multiplayer||!onlineRoomCode||!onlineToken)return;
+ if(!authSession?.access_token){
+  status.textContent='Für Online-Partien wird ein angemeldeter Account benötigt.';
+  return;
+ }
+ onlineBusy=true;
+ try{
+  const response=await fetch(SUPABASE_URL+'/functions/v1/abalone-move',{
+   method:'POST',
+   headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+authSession.access_token,'Content-Type':'application/json'},
+   body:JSON.stringify({room_code:onlineRoomCode,player_token:onlineToken,move:{keys:mv.keys,dq:mv.dq,dr:mv.dr}})
+  });
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||'Server hat den Zug abgelehnt.');
+  if(data.state)restoreState(data.state);
+  if(data.winner){
+   gameOver=true;
+   const rating=data.rating;
+   status.textContent=(data.winner==='b'?'Schwarz':'Weiß')+' gewinnt!'+(rating?' Elo aktualisiert.':'');
+   if(rating){
+    const myChange=onlineColor==='b'?rating.black_change:rating.white_change;
+    const myNew=onlineColor==='b'?rating.black_rating:rating.white_rating;
+    status.textContent+=' Dein Rating: '+(myChange>=0?'+':'')+myChange+' → '+myNew;
+    if(currentPlayer){currentPlayer.rating=myNew;currentPlayer.games_played=(currentPlayer.games_played||0)+1;currentPlayer.wins+=(data.winner===onlineColor?1:0);currentPlayer.losses+=(data.winner!==onlineColor?1:0);renderProfile();}
+   }
+   updateUI();
+  }
+  lastRemoteUpdatedAt=null;
+ }catch(e){
+  status.textContent='Server hat den Zug nicht übernommen: '+e.message;
+  try{const latest=await rpc('abalone_get_room',{p_room_code:onlineRoomCode,p_player_token:onlineToken});if(latest.state)restoreState(latest.state);}catch{}
+ }finally{onlineBusy=false;}
 }
 async function sendOnlineState(winner){
  if(!multiplayer||!onlineRoomCode||!onlineToken)return;

@@ -45,7 +45,15 @@ main{max-width:720px;margin:auto;padding:16px 12px 28px}.screen{display:none}.sc
 @media(min-width:600px){main{padding-top:24px}.boardwrap{max-width:590px;margin:auto}.card{padding:16px}}
 </style>
 </head>
-<body><main>
+<body><div id="profilePill" style="display:none;position:fixed;top:10px;right:10px;z-index:1000;font-size:.8rem;text-align:right">
+<button id="profileButton" class="btn" style="min-width:0;padding:7px 10px;border-radius:20px;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></button>
+<div id="profileActions" style="display:none;background:#1b3732;border:1px solid #6d8a80;border-radius:10px;padding:8px;margin-top:5px"><button id="logoutButton" class="btn" style="min-width:0;padding:7px 10px">Abmelden</button></div></div>
+<section id="loginScreen" class="screen active"><header class="top"><h1>Abalone</h1><p class="sub">Wie möchtest du spielen?</p></header>
+<div class="card" style="max-width:440px;margin:30px auto 0"><label for="playerNameInput">Spielername</label>
+<input id="playerNameInput" maxlength="20" autocomplete="nickname" placeholder="Dein Name (3–20 Zeichen)" style="width:100%;margin-top:8px;padding:13px;border-radius:10px;border:1px solid #6d8a80;background:#102522;color:#fff8e9;font-size:1rem">
+<button class="btn primary" id="accountLoginBtn" style="width:100%;margin-top:12px">Account erstellen / anmelden</button>
+<button class="btn" id="guestContinueBtn" style="width:100%;margin-top:9px">Als Gast fortfahren</button>
+<p class="hint" id="loginMessage">Ein neuer Account startet mit 270 Punkten. Dein Account bleibt auf diesem Gerät angemeldet.</p></div></section><main>
 <section id="mainMenu" class="screen active">
  <header class="top"><h1>Abalone</h1><p class="sub">Wähle deine Spielart</p></header>
  <div class="menu-options">
@@ -408,6 +416,7 @@ function updateUI(){
 document.getElementById('clear').addEventListener('click',()=>{selected=[];draw();updateUI();status.textContent=(turn==='b'?'Schwarz':'Weiß')+' ist am Zug. Auswahl aufgehoben.'});
 document.getElementById('newGame').addEventListener('click',()=>{if(confirm('Neues Spiel starten? Der aktuelle Spielstand geht verloren.'))init(boardRadius,timed,timeLimitSeconds/60)});
 // Hauptmenü und Spielmodi
+const loginScreen=document.getElementById('loginScreen');
 const mainMenu=document.getElementById('mainMenu');
 const localMenu=document.getElementById('localMenu');
 const multiMenu=document.getElementById('multiMenu');
@@ -415,10 +424,51 @@ const roomScreen=document.getElementById('roomScreen');
 const timeMenu=document.getElementById('timeMenu');
 const gameScreen=document.getElementById('gameScreen');
 function showScreen(screen){
- [mainMenu,localMenu,multiMenu,roomScreen,timeMenu,gameScreen].forEach(el=>el.classList.remove('active'));
+ [loginScreen,mainMenu,localMenu,multiMenu,roomScreen,timeMenu,gameScreen].forEach(el=>el.classList.remove('active'));
  screen.classList.add('active');
  document.body.classList.remove('fullscreen-mode');
 }
+
+let currentPlayer=null, isGuest=true, pendingInvite=null;
+const DEVICE_KEY='abalone_device_token_v1';
+function getDeviceToken(){
+ let token=localStorage.getItem(DEVICE_KEY);
+ if(!token){const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);token=[...bytes].map(b=>b.toString(16).padStart(2,'0')).join('');localStorage.setItem(DEVICE_KEY,token);}
+ return token;
+}
+function renderProfile(){
+ const pill=document.getElementById('profilePill');
+ if(!currentPlayer){pill.style.display='none';return;}
+ pill.style.display='block';document.getElementById('profileButton').textContent=currentPlayer.username+' · '+currentPlayer.rating;
+}
+function enterAsGuest(){currentPlayer=null;isGuest=true;renderProfile();showScreen(mainMenu);continuePendingInvite();}
+async function loginPlayer(){
+ const name=document.getElementById('playerNameInput').value.trim(), message=document.getElementById('loginMessage'), button=document.getElementById('accountLoginBtn');
+ if(name.length<3){message.textContent='Bitte gib einen Namen mit mindestens 3 Zeichen ein.';return;}
+ button.disabled=true;message.textContent='Account wird geladen …';
+ try{const result=await rpc('abalone_register_player',{p_username:name,p_device_token:getDeviceToken()});currentPlayer=result;isGuest=false;renderProfile();showScreen(mainMenu);continuePendingInvite();}
+ catch(e){message.textContent=e.message||'Anmeldung fehlgeschlagen.';}
+ finally{button.disabled=false;}
+}
+async function restorePlayer(){
+ const token=localStorage.getItem(DEVICE_KEY);if(!token)return false;
+ try{const player=await rpc('abalone_get_player',{p_device_token:token});if(player){currentPlayer=player;isGuest=false;renderProfile();return true;}}catch(e){console.warn(e);}
+ return false;
+}
+document.getElementById('accountLoginBtn').addEventListener('click',loginPlayer);
+document.getElementById('playerNameInput').addEventListener('keydown',e=>{if(e.key==='Enter')loginPlayer();});
+document.getElementById('guestContinueBtn').addEventListener('click',enterAsGuest);
+document.getElementById('profileButton').addEventListener('click',()=>{
+ const actions=document.getElementById('profileActions');actions.style.display=actions.style.display==='block'?'none':'block';
+ const locked=multiplayer&&onlineStatus==='playing'&&!gameOver, logout=document.getElementById('logoutButton');
+ logout.disabled=locked;logout.style.opacity=locked?'.4':'1';logout.title=locked?'Während eines laufenden Online-Spiels nicht möglich':'';
+});
+document.getElementById('logoutButton').addEventListener('click',()=>{
+ if(multiplayer&&onlineStatus==='playing'&&!gameOver)return;
+ currentPlayer=null;isGuest=true;localStorage.removeItem(DEVICE_KEY);document.getElementById('profileActions').style.display='none';renderProfile();showScreen(loginScreen);
+});
+function continuePendingInvite(){if(!pendingInvite)return;const code=pendingInvite;pendingInvite=null;document.getElementById('roomCodeInput').value=code;showScreen(multiMenu);joinOnlineRoom(code);}
+
 function startGame(radius,isTimed,minutes){
  multiplayer=false; onlineStatus='offline'; onlineRoomCode=null; onlineToken=null; onlineColor=null;
  if(pollHandle){clearInterval(pollHandle);pollHandle=null;}
@@ -578,22 +628,13 @@ document.getElementById('onlineStandard').addEventListener('click',()=>createOnl
 document.getElementById('onlineMini').addEventListener('click',()=>createOnlineRoom(3));
 document.getElementById('joinRoomBtn').addEventListener('click',()=>joinOnlineRoom(document.getElementById('roomCodeInput').value));
 const initialInvite=new URLSearchParams(location.search).get('room');
-if(initialInvite){
- showScreen(multiMenu);
- document.getElementById('roomCodeInput').value=initialInvite.toUpperCase();
- document.getElementById('multiMessage').textContent='Einladung erkannt – du wirst automatisch mit dem Spiel verbunden …';
- document.getElementById('joinRoomBtn').disabled=true;
- document.getElementById('joinRoomBtn').textContent='Trete dem Spiel bei …';
- // Beitritt unmittelbar beim Öffnen des Einladungslinks auslösen.
- Promise.resolve().then(()=>joinOnlineRoom(initialInvite)).finally(()=>{
-  document.getElementById('joinRoomBtn').disabled=false;
-  document.getElementById('joinRoomBtn').textContent='Spiel beitreten';
- });
-}
+pendingInvite=initialInvite?initialInvite.toUpperCase():null;
+(async()=>{const restored=await restorePlayer();if(restored){showScreen(mainMenu);continuePendingInvite();}
+else{showScreen(loginScreen);if(pendingInvite)document.getElementById('loginMessage').textContent='Einladung erkannt. Bitte melde dich an oder fahre als Gast fort, um beizutreten.';}})();
 
 // Versionsprüfung: Pages liefert neue index.html/version.json; bei laufendem Match
 // wird ein Reload bis zum Ende aufgeschoben, damit kein Spielzug verloren geht.
-const APP_VERSION='20.1.0';
+const APP_VERSION='20.2.0';
 let updatePending=false;
 async function checkAppVersion(){
  try{

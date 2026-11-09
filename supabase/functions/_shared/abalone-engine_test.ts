@@ -39,7 +39,7 @@ Deno.test("ejects a normal marble for one loss point",()=>{
 });
 Deno.test("ejecting a bomb gives two loss points and clears its marker",()=>{
  const s=state([["2,0","b"],["3,0","b"],["4,0","w"]],"b",4,{b:null,w:"4,0"});
- const r=applyAuthoritativeMove(s,{keys:["3,0"],dq:1,dr:0});
+ const r=applyAuthoritativeMove(s,{keys:["2,0","3,0"],dq:1,dr:0});
  assertEquals(r.state.lost.w,2);assertEquals(r.state.bombs.w,null);
 });
 Deno.test("pushed bomb remains marked at its new square",()=>{
@@ -49,7 +49,7 @@ Deno.test("pushed bomb remains marked at its new square",()=>{
 });
 Deno.test("mini board declares winner at three loss points",()=>{
  const s=state([["1,0","b"],["2,0","b"],["3,0","w"]],"b",3,{b:null,w:"3,0"},{b:0,w:1});
- const r=applyAuthoritativeMove(s,{keys:["2,0"],dq:1,dr:0});
+ const r=applyAuthoritativeMove(s,{keys:["1,0","2,0"],dq:1,dr:0});
  assertEquals(r.winner,"b");assertEquals(r.state.gameOver,true);
 });
 Deno.test("standard board declares winner at six loss points",()=>{

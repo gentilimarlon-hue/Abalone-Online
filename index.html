@@ -609,6 +609,9 @@ function restoreState(s){
 let authSession=null;
 const AUTH_SESSION_KEY='abalone_supabase_auth_v1';
 function saveAuthSession(session){
+ if(session && !session.expires_at && Number.isFinite(Number(session.expires_in))){
+  session={...session,expires_at:Math.floor(Date.now()/1000)+Number(session.expires_in)};
+ }
  authSession=session;
  if(session)localStorage.setItem(AUTH_SESSION_KEY,JSON.stringify(session));
  else localStorage.removeItem(AUTH_SESSION_KEY);

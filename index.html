@@ -465,7 +465,7 @@ document.getElementById('profileButton').addEventListener('click',()=>{
 });
 document.getElementById('logoutButton').addEventListener('click',()=>{
  if(multiplayer&&onlineStatus==='playing'&&!gameOver)return;
- currentPlayer=null;isGuest=true;localStorage.removeItem(DEVICE_KEY);document.getElementById('profileActions').style.display='none';renderProfile();showScreen(loginScreen);
+ currentPlayer=null;isGuest=true;document.getElementById('profileActions').style.display='none';renderProfile();showScreen(loginScreen);document.getElementById('loginMessage').textContent='Abgemeldet. Gib deinen bisherigen Spielernamen erneut ein, um dich anzumelden.';
 });
 function continuePendingInvite(){if(!pendingInvite)return;const code=pendingInvite;pendingInvite=null;document.getElementById('roomCodeInput').value=code;showScreen(multiMenu);joinOnlineRoom(code);}
 

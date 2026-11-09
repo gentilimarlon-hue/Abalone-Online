@@ -18,7 +18,7 @@ Deno.test("rejects disconnected and non-collinear groups",()=>{
  assertThrows(()=>applyAuthoritativeMove(s,{keys:["0,0","2,0"],dq:0,dr:1}));
 });
 Deno.test("rejects equal-strength push",()=>{
- const s=state([["0,0","b"],["1,0","b"],["2,0","w"]]);
+ const s=state([["0,0","b"],["1,0","b"],["2,0","w"],["3,0","w"]]);
  assertThrows(()=>applyAuthoritativeMove(s,{keys:["0,0","1,0"],dq:1,dr:0}));
 });
 Deno.test("rejects push against three opponents",()=>{
@@ -33,12 +33,12 @@ Deno.test("three push two shifts opponent line correctly",()=>{
  assertEquals(m.get("-1,0"),"b");assertEquals(m.get("0,0"),"b");assertEquals(m.get("1,0"),"b");
 });
 Deno.test("ejects a normal marble for one loss point",()=>{
- const s=state([["3,0","b"],["4,0","w"]]);
- const r=applyAuthoritativeMove(s,{keys:["3,0"],dq:1,dr:0});
+ const s=state([["2,0","b"],["3,0","b"],["4,0","w"]]);
+ const r=applyAuthoritativeMove(s,{keys:["2,0","3,0"],dq:1,dr:0});
  assertEquals(r.state.lost.w,1);assertEquals(r.ejected,[{color:"w",bomb:false}]);
 });
 Deno.test("ejecting a bomb gives two loss points and clears its marker",()=>{
- const s=state([["3,0","b"],["4,0","w"]],"b",4,{b:null,w:"4,0"});
+ const s=state([["2,0","b"],["3,0","b"],["4,0","w"]],"b",4,{b:null,w:"4,0"});
  const r=applyAuthoritativeMove(s,{keys:["3,0"],dq:1,dr:0});
  assertEquals(r.state.lost.w,2);assertEquals(r.state.bombs.w,null);
 });
@@ -48,12 +48,12 @@ Deno.test("pushed bomb remains marked at its new square",()=>{
  assertEquals(r.state.bombs.w,"2,0");
 });
 Deno.test("mini board declares winner at three loss points",()=>{
- const s=state([["2,0","b"],["3,0","w"]],"b",3,{b:null,w:"3,0"},{b:0,w:1});
+ const s=state([["1,0","b"],["2,0","b"],["3,0","w"]],"b",3,{b:null,w:"3,0"},{b:0,w:1});
  const r=applyAuthoritativeMove(s,{keys:["2,0"],dq:1,dr:0});
  assertEquals(r.winner,"b");assertEquals(r.state.gameOver,true);
 });
 Deno.test("standard board declares winner at six loss points",()=>{
- const s=state([["3,0","b"],["4,0","w"]],"b",4,{b:null,w:"4,0"},{b:0,w:4});
+ const s=state([["2,0","b"],["3,0","b"],["4,0","w"]],"b",4,{b:null,w:"4,0"},{b:0,w:4});
  const r=applyAuthoritativeMove(s,{keys:["3,0"],dq:1,dr:0});
  assertEquals(r.winner,"b");assertEquals(r.state.lost.w,6);
 });

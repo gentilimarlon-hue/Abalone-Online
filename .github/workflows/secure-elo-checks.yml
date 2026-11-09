@@ -32,6 +32,32 @@ jobs:
           if grants:
               raise SystemExit("Legacy passwordless player API grants must remain disabled")
           PY
+      - name: Check migration block delimiters and prerequisites
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          migrations = sorted(Path("supabase/migrations").glob("*.sql"))
+          if len(migrations) != 6:
+              raise SystemExit(f"Expected six ordered migrations, found {len(migrations)}")
+
+          for path in migrations:
+              sql = path.read_text(encoding="utf-8")
+              blocks = re.findall(r"do\\s+\\$\\$(.*?)\\$\\$;", sql, re.I | re.S)
+              if len(re.findall(r"do\\s+\\$\\$", sql, re.I)) != len(blocks):
+                  raise SystemExit(f"Unclosed DO block in {path}")
+              for block in blocks:
+                  if not re.search(r"\\bend\\s*;\\s*$", block.strip(), re.I):
+                      raise SystemExit(f"DO block must end with END; in {path}")
+              if re.search(r"^\\$;\\s*$", sql, re.M):
+                  raise SystemExit(f"Stray dollar delimiter in {path}")
+
+          foundation = migrations[0].read_text(encoding="utf-8")
+          if "alter extension pgcrypto set schema extensions" not in foundation.lower():
+              raise SystemExit("Foundation migration must normalize the pgcrypto schema")
+          print("Migration delimiter and prerequisite guards passed")
+          PY
       - name: Check browser JavaScript syntax
         run: |
           python - <<'PY'

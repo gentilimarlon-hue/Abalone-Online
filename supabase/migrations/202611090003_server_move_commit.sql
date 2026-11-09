@@ -12,6 +12,7 @@ set search_path = public
 as $$
 declare
   v_room public.game_rooms%rowtype;
+  v_rating jsonb := null;
 begin
   if auth.role() <> 'service_role' then
     raise exception 'Only trusted game server may commit moves';
@@ -39,7 +40,17 @@ begin
       updated_at=now(),last_move_at=now()
   where id=p_room_id;
 
-  return jsonb_build_object('ok',true,'status',case when p_winner is null then 'playing' else 'finished' end);
+  -- Commit and Elo settlement are one database transaction. If settlement
+  -- fails, the game result update rolls back as well.
+  if p_winner is not null and v_room.host_player_id is not null and v_room.guest_player_id is not null then
+    v_rating := public.abalone_settle_validated_match(
+      p_room_id, v_room.host_player_id, v_room.guest_player_id, p_winner
+    );
+  end if;
+
+  return jsonb_build_object('ok',true,
+    'status',case when p_winner is null then 'playing' else 'finished' end,
+    'rating',v_rating);
 end;
 $$;
 

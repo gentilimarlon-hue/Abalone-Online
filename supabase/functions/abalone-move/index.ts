@@ -65,17 +65,7 @@ Deno.serve(async (req) => {
       return json({ error: commitError.message }, status);
     }
 
-    let rating = null;
-    if (result.winner && room.host_player_id && room.guest_player_id) {
-      const { data, error } = await admin.rpc("abalone_settle_validated_match", {
-        p_room_id: room.id,
-        p_black_player_id: room.host_player_id,
-        p_white_player_id: room.guest_player_id,
-        p_winner_color: result.winner,
-      });
-      if (error) throw error;
-      rating = data;
-    }
+    const rating = commit?.rating || null;
     return json({ ok: true, state: result.state, winner: result.winner, rating });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Unexpected server error" }, 400);

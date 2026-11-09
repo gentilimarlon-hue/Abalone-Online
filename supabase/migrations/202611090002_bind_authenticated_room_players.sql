@@ -101,6 +101,6 @@ end;
 $$;
 
 revoke all on function public.abalone_create_room(text,integer,jsonb) from public, anon;
-grant execute on function public.abalone_create_room(text,integer,jsonb) to anon, authenticated;
+grant execute on function public.abalone_create_room(text,integer,jsonb) to authenticated;
 revoke all on function public.abalone_join_room(text) from public, anon;
-grant execute on function public.abalone_join_room(text) to anon, authenticated;
+grant execute on function public.abalone_join_room(text) to authenticated;

@@ -780,7 +780,7 @@ document.getElementById('joinRoomBtn').addEventListener('click',()=>joinOnlineRo
 const initialInvite=new URLSearchParams(location.search).get('room');
 pendingInvite=initialInvite?initialInvite.toUpperCase():null;
 (async()=>{const restored=await restorePlayer();if(restored){showScreen(mainMenu);continuePendingInvite();}
-else{showScreen(loginScreen);if(pendingInvite)document.getElementById('loginMessage').textContent='Einladung erkannt. Bitte melde dich an oder fahre als Gast fort, um beizutreten.';}})();
+else{showScreen(loginScreen);if(pendingInvite)document.getElementById('loginMessage').textContent='Einladung erkannt. Bitte melde dich mit einem Account an, um der Online-Partie beizutreten. Gastkonten können nicht an gewerteten Online-Partien teilnehmen.';}})();
 
 // Versionsprüfung: Pages liefert neue index.html/version.json; bei laufendem Match
 // wird ein Reload bis zum Ende aufgeschoben, damit kein Spielzug verloren geht.

@@ -182,7 +182,7 @@ begin
   if auth.role() <> 'service_role' then
     raise exception 'Nur der vertrauenswürdige Spielserver darf Ratings verbuchen';
   end if;
-  if p_winner_color not in ('b','w') then
+  if p_winner_color is null or p_winner_color not in ('b','w') then
     raise exception 'Ungültiger Gewinner';
   end if;
 
@@ -190,6 +190,9 @@ begin
   where id=p_room_id for update;
   if not found then raise exception 'Spielraum nicht gefunden'; end if;
   if v_room.status <> 'finished' then raise exception 'Partie ist nicht abgeschlossen'; end if;
+  if v_room.winner is distinct from p_winner_color then
+    raise exception 'Gewinner stimmt nicht mit dem abgeschlossenen Spiel überein';
+  end if;
   if v_room.host_player_id is distinct from p_black_player_id
      or v_room.guest_player_id is distinct from p_white_player_id then
     raise exception 'Spieler passen nicht zum Spielraum';

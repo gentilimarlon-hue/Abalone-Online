@@ -636,23 +636,17 @@ else{showScreen(loginScreen);if(pendingInvite)document.getElementById('loginMess
 // wird ein Reload bis zum Ende aufgeschoben, damit kein Spielzug verloren geht.
 const APP_VERSION='20.2.1';
 let updatePending=false;
+// Versionsprüfung ohne automatischen Reload: Ein Versionsunterschied darf
+// niemals eine Reload-Schleife auslösen. Aktualisierungen erfolgen manuell.
 async function checkAppVersion(){
  try{
   const response=await fetch('./version.json?check='+Date.now(),{cache:'no-store'});
   if(!response.ok)return;
   const remote=await response.json();
-  if(remote.version && remote.version!==APP_VERSION){
-   if(multiplayer && onlineStatus==='playing'){
-    updatePending=true;
-    status.textContent='Eine Aktualisierung ist verfügbar. Nach dem Spiel wird automatisch aktualisiert.';
-   }else{
-    location.reload();
-   }
-  }
+  if(remote.version && remote.version!==APP_VERSION) updatePending=true;
  }catch(e){}
 }
 checkAppVersion();
-setInterval(checkAppVersion,60000);
 
 // Kein Spiel wird vor der Auswahl automatisch gestartet.
 })();

@@ -146,8 +146,8 @@ const svg=document.getElementById('board'), status=document.getElementById('stat
 let boardRadius=4,timed=false,timeLeft={b:0,w:0},timerHandle=null,timerStarted=false,timeLimitSeconds=0;
 let multiplayer=false, onlineRoomCode=null, onlineToken=null, onlineColor=null, onlineStatus='offline';
 let pollHandle=null, lastRemoteUpdatedAt=null, onlineBusy=false, ratingRefreshForFinishedRoom=false;
-const SUPABASE_URL='https://mduejbovvxpdvziqyoea.supabase.co';
-const SUPABASE_KEY='sb_publishable_D2hDu69XXNM0kEt2V8ocqQ_21ZK5lGI';
+const SUPABASE_URL='https://ohhckckeyfoalszjanfj.supabase.co';
+const SUPABASE_KEY='sb_publishable_vU6uMi_UnxnwdCDINLFNTA_8RaGmUiQ';
 const cells=[], map=new Map(); let pieces=new Map(), turn='b', selected=[], lost={b:0,w:0}, gameOver=false, bombs={b:null,w:null};
 const dirs=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
 const key=(q,r)=>q+','+r;

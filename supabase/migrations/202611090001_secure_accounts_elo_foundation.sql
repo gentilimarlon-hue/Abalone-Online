@@ -3,7 +3,24 @@
 -- This migration does NOT enable rating updates yet. Elo remains disabled until
 -- the authoritative server-side move validator is deployed and tested.
 
+create schema if not exists extensions;
 create extension if not exists pgcrypto with schema extensions;
+
+-- The legacy bootstrap schema may have installed pgcrypto in public first.
+-- Move the relocatable extension so all migrations use one stable schema.
+do $$
+declare
+  v_schema text;
+begin
+  select n.nspname into v_schema
+  from pg_extension e
+  join pg_namespace n on n.oid=e.extnamespace
+  where e.extname='pgcrypto';
+
+  if v_schema is distinct from 'extensions' then
+    alter extension pgcrypto set schema extensions;
+  end if;
+end; $$;
 
 alter table public.players
   add column if not exists auth_user_id uuid;

@@ -16,8 +16,7 @@ begin
     execute format('revoke all on function %s from public, anon, authenticated', v_function.signature);
     execute format('grant execute on function %s to service_role', v_function.signature);
   end loop;
-end;
-$;
+end; $$;
 
 -- Authenticated sessions are required for room creation/joining in the rated branch.
 revoke all on function public.abalone_create_room(text,integer,jsonb) from public, anon;

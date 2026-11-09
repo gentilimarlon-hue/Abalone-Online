@@ -644,6 +644,7 @@ async function createOnlineRoom(radius){
   showScreen(gameScreen);init(radius,false,0);
   const result=await rpc('abalone_create_room',{p_mode:radius===3?'mini':'standard',p_minutes:null,p_initial_state:serializeState()});
   onlineRoomCode=result.room_code;onlineToken=result.player_token;onlineColor=result.player_color||'b';
+  if(result.state)restoreState(result.state);
   const invite=new URL(location.href);invite.search='?room='+encodeURIComponent(onlineRoomCode);invite.hash='';
   const inviteUrl=invite.toString();
   document.getElementById('roomCodeDisplay').textContent=onlineRoomCode;

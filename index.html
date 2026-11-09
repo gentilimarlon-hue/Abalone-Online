@@ -508,7 +508,10 @@ async function joinOnlineRoom(code){
   document.getElementById('gameModeNotice').textContent='Online-Spiel · Weiß';
   setOnlineNotice('Raum '+onlineRoomCode+' · Du spielst Weiß.');
   lastRemoteUpdatedAt=null;startPolling();
- }catch(e){document.getElementById('multiMessage').textContent='Beitritt nicht möglich: '+e.message;}
+ }catch(e){
+  document.getElementById('multiMessage').textContent='Automatischer Beitritt nicht möglich: '+e.message+' Du kannst es erneut versuchen, indem du auf „Spiel beitreten“ tippst.';
+  showScreen(multiMenu);
+ }
 }
 async function copyText(value,label='Text'){
  const feedback=document.getElementById('roomWaitText');
@@ -578,8 +581,14 @@ const initialInvite=new URLSearchParams(location.search).get('room');
 if(initialInvite){
  showScreen(multiMenu);
  document.getElementById('roomCodeInput').value=initialInvite.toUpperCase();
- // Einladungslinks leiten direkt zum Beitritt; bei Fehler bleibt der Code im Eingabefeld.
- setTimeout(()=>joinOnlineRoom(initialInvite),350);
+ document.getElementById('multiMessage').textContent='Einladung erkannt – du wirst automatisch mit dem Spiel verbunden …';
+ document.getElementById('joinRoomBtn').disabled=true;
+ document.getElementById('joinRoomBtn').textContent='Trete dem Spiel bei …';
+ // Beitritt unmittelbar beim Öffnen des Einladungslinks auslösen.
+ Promise.resolve().then(()=>joinOnlineRoom(initialInvite)).finally(()=>{
+  document.getElementById('joinRoomBtn').disabled=false;
+  document.getElementById('joinRoomBtn').textContent='Spiel beitreten';
+ });
 }
 
 // Versionsprüfung: Pages liefert neue index.html/version.json; bei laufendem Match

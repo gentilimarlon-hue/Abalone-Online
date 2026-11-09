@@ -14,11 +14,16 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   try {
-    const url = Deno.env.get("SUPABASE_URL")!;
-    const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const url = Deno.env.get("SUPABASE_URL");
+    const anon = Deno.env.get("SUPABASE_ANON_KEY");
+    const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !anon || !service) {
+      console.error("Missing Supabase environment configuration");
+      return json({ error: "Game service is not configured" }, 503);
+    }
+
     const authHeader = req.headers.get("Authorization") || "";
-    const jwt = authHeader.replace(/^Bearer\s+/i, "");
+    const jwt = authHeader.replace(/^Bearer\\s+/i, "");
     if (!jwt) return json({ error: "Authentication required" }, 401);
 
     const authClient = createClient(url, anon, { global: { headers: { Authorization: `Bearer ${jwt}` } } });
@@ -26,9 +31,6 @@ Deno.serve(async (req) => {
     if (authError || !authData.user) return json({ error: "Invalid session" }, 401);
     const userId = authData.user.id;
 
-    if (!url || !anon || !service) {
-      return json({ error: "Game service is not configured" }, 503);
-    }
     const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
     let body: Record<string, unknown>;
     try {
@@ -61,7 +63,11 @@ Deno.serve(async (req) => {
     const { data: room, error: roomError } = await admin.from("game_rooms")
       .select("id,room_code,status,state,current_turn,host_token_hash,guest_token_hash,host_player_id,guest_player_id,updated_at")
       .eq("room_code", roomCode).gt("expires_at", new Date().toISOString()).maybeSingle();
-    if (roomError || !room) return json({ error: "Room not found" }, 404);
+    if (roomError) {
+      console.error("Room lookup failed", roomError);
+      return json({ error: "Could not load game room" }, 500);
+    }
+    if (!room) return json({ error: "Room not found" }, 404);
     if (room.status !== "playing") return json({ error: "Game is not active" }, 409);
 
     const tokenBytes = new TextEncoder().encode(playerToken);
@@ -73,7 +79,12 @@ Deno.serve(async (req) => {
     else if (tokenHash === room.guest_token_hash) { color = "w"; playerId = room.guest_player_id; }
     else return json({ error: "Invalid room token" }, 403);
 
-    const { data: profile } = await admin.from("players").select("id").eq("auth_user_id", userId).maybeSingle();
+    const { data: profile, error: profileError } = await admin.from("players")
+      .select("id").eq("auth_user_id", userId).maybeSingle();
+    if (profileError) {
+      console.error("Player profile lookup failed", profileError);
+      return json({ error: "Could not verify player account" }, 500);
+    }
     if (playerId && profile?.id !== playerId) return json({ error: "This room belongs to another account" }, 403);
     if (!playerId && profile?.id) return json({ error: "Account was not bound to this room; create a new room" }, 403);
     if (room.current_turn !== color) return json({ error: "Not your turn" }, 409);
@@ -91,8 +102,15 @@ Deno.serve(async (req) => {
       p_winner: result.winner,
     });
     if (commitError) {
-      const status = commitError.message.includes("changed") ? 409 : 400;
-      return json({ error: commitError.message }, status);
+      const message = commitError.message || "Could not commit move";
+      if (message.includes("changed") || message.includes("not active")) {
+        return json({ error: message }, 409);
+      }
+      if (/invalid|inconsistent|only trusted/i.test(message)) {
+        return json({ error: message }, 400);
+      }
+      console.error("Move commit failed", commitError);
+      return json({ error: "Could not save move" }, 500);
     }
 
     const rating = commit?.rating || null;

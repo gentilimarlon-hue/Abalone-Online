@@ -56,6 +56,8 @@ declare
   v_room_id uuid;
   v_room_code text;
   v_settlement jsonb;
+  v_state jsonb;
+  v_updated_at timestamptz;
   v_count integer;
   v_host_games integer;
   v_guest_games integer;
@@ -79,16 +81,18 @@ begin
   v_join := public.abalone_join_room(v_room_code);
   if v_join->>'player_color' <> 'w' then raise exception 'Guest color should be white'; end if;
 
-  update public.game_rooms
-  set status='finished', winner='b',
-      state=jsonb_set(state,'{gameOver}','true'::jsonb),
-      updated_at=now()
-  where id=v_room_id;
+  select state,updated_at into strict v_state,v_updated_at
+  from public.game_rooms where id=v_room_id;
+  -- A standard-board terminal state: white has lost the six required marbles.
+  v_state := jsonb_set(v_state,'{lost,w}','6'::jsonb);
+  v_state := jsonb_set(v_state,'{gameOver}','true'::jsonb);
 
   perform set_config('request.jwt.claim.role','service_role',true);
-  v_settlement := public.abalone_settle_validated_match(v_room_id,v_host_profile,v_guest_profile,'b');
-  if coalesce((v_settlement->>'already_settled')::boolean,true) then
-    raise exception 'First settlement unexpectedly reported as already settled';
+  v_settlement := public.abalone_commit_server_move(
+    v_room_id,v_updated_at,v_state,'b'
+  );
+  if v_settlement->>'status' <> 'finished' then
+    raise exception 'Server move commit did not finish the match';
   end if;
 
   v_settlement := public.abalone_settle_validated_match(v_room_id,v_host_profile,v_guest_profile,'b');
